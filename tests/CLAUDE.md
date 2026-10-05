@@ -23,14 +23,14 @@ All backend tests live here and run from `backend/` with `poetry run pytest` (`t
 6. `test_append_only_tables.py`: UPDATE or DELETE on each append-only model raises `AppendOnlyViolation` (NFR-02).
 7. `test_routes_declare_roles.py`: every non-public route has a `require_role` dependency (NFR-04).
 8. `test_no_pii_in_logs.py`: run the main flows with log capture, and assert no seeded name, email, username, amount or units string appears (NFR-03).
-9. `test_migrations_locked.py`: merged migration file hashes match `backend/migrations/LOCKED_HASHES.txt` (NFR-05).
+9. `test_migrations_locked.py`: hashes of migration files from approved phases match `backend/migrations/LOCKED_HASHES.txt` (NFR-05).
 
 ## AC tagging (mandatory)
 
 - Every AC scenario `AC-NN.k` in `specs/` has at least one test.
 - The test is decorated with `@pytest.mark.ac("AC-NN")`, its name starts with `test_ac_NN_`, and its docstring cites `AC-NN.k`.
 - Worked examples in the specs are copied **verbatim** as expected values. Never recompute them in the test.
-- **TDD:** commit the failing test before the implementation where practical, with messages `test: red …` → `feat: green …` → `refactor: …`.
+- **TDD:** write the failing test first and run it. Paste the real **red** output, then the **green** output after implementing, into the phase review as red–green–refactor evidence.
 
 ## Rules
 

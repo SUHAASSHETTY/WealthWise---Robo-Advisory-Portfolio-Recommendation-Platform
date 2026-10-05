@@ -12,7 +12,7 @@ Read the root `CLAUDE.md` first. This file adds backend-wide rules. Each `app/<l
   - `db.py`: engine, session factory, `DecimalText` TypeDecorator;
   - `security.py`: JWT, bcrypt;
   - `clock.py`: the `Clock` protocol and `SystemClock`.
-- `migrations/`: Alembic. **Never edit a merged revision.** Add a new one. Hashes are locked in `migrations/LOCKED_HASHES.txt`.
+- `migrations/`: Alembic. **Never edit a revision from an approved phase.** Add a new one. Hashes are locked in `migrations/LOCKED_HASHES.txt`.
 - `app/seed/`: synthetic users, customers, holdings, goals, and `nav_series.csv`.
 
 ## Backend-wide rules
@@ -37,7 +37,7 @@ Read the root `CLAUDE.md` first. This file adds backend-wide rules. Each `app/<l
 ## Testing hookup
 
 - `pyproject.toml` sets `[tool.pytest.ini_options] testpaths = ["../tests"]`, `pythonpath = ["."]`, the `markers = ["ac(id): acceptance criterion"]` registration, and `--cov=app --cov-report=xml:../coverage.xml --cov-report=term-missing`.
-- `pytest-cov` is a declared dev dependency; the coverage artefact is committed (brief §7.4).
+- `pytest-cov` is a declared dev dependency; the coverage artefact `coverage.xml` is kept in the repo (brief §7.4).
 - Import-linter contracts live in `pyproject.toml` (`[tool.importlinter]`):
   - layers `app.api > app.services > app.repositories > app.domain`;
   - `app.domain` is forbidden from importing `app.core`, `sqlalchemy`, `fastapi` and `pydantic`.
