@@ -1,0 +1,16 @@
+.claude/state/
+node_modules/
+dist/
+build/
+.next/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.env.local
+.env.*.local
+
+# Original company Harness kept as read-only reference, not committed
+claude_harness_eng_v1/
