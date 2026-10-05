@@ -25,7 +25,7 @@ api/
 - **Decimals at the boundary:** request fields are `str` matching `^-?\d+(\.\d+)?$` with the spec's scale; JSON numbers return `422 DECIMAL_MUST_BE_STRING`. Responses serialise every Decimal as a string with fixed scale (`"5.00"`, `"400.0000"`).
 - **Thin handlers:** parse, call one service method, map the result to a response model. No business rules and no arithmetic.
 - **Error envelope:** `{"error": {"code", "message", "details"}}`, with status codes per app_spec §5.7. Unowned resources return 404, not 403.
-- **Paths** match the spec exactly (`/api/v1/...`). Request and response field names match the spec tables. Any change is a spec PR first.
+- **Paths** match the spec exactly (`/api/v1/...`). Request and response field names match the spec tables. Any change is a spec change first.
 - **Logging:** the middleware logs method, the **route template** (not the raw path with IDs), status, duration and correlation ID. Never request or response bodies.
 - **`/health`:** `SELECT 1`, returning 200 or 503, with no auth and within 1 s (NFR-07).
 - **Tests:** `tests/acceptance/` (HTTP-level, AC-tagged, via `httpx.AsyncClient` against the app) and `tests/architecture/`.

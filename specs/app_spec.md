@@ -2,7 +2,7 @@
 
 **Status:** v1.0 · **Owner:** AI-Native Engineer (spec author) · **Source:** BC-AINE-008 brief, `docs/business-case.md`
 
-This is the root specification. It defines the system boundary, shared conventions, cross-cutting rules and the map from every acceptance criterion and NFR to the feature spec that owns it. **The specs win over the code (Spec-Is-Truth).** If code and a spec disagree, update the spec in a reviewed PR, then regenerate the code.
+This is the root specification. It defines the system boundary, shared conventions, cross-cutting rules and the map from every acceptance criterion and NFR to the feature spec that owns it. **The specs win over the code (Spec-Is-Truth).** If code and a spec disagree, update the spec deliberately (recorded in the phase review), then regenerate the code.
 
 ---
 
@@ -142,7 +142,7 @@ Errors use the envelope `{"error": {"code": "UPPER_SNAKE", "message": "...", "de
 
 ### 5.9 Migrations and policy data (NFR-05)
 
-- Alembic migrations live in `backend/migrations/versions/`. A merged migration is **never edited or deleted**; changes are new revisions only. A test compares migration file hashes to `backend/migrations/LOCKED_HASHES.txt`.
+- Alembic migrations live in `backend/migrations/versions/`. A migration from an approved phase is **never edited or deleted**; changes are new revisions only. A test compares migration file hashes to `backend/migrations/LOCKED_HASHES.txt`.
 - The v1 risk policy, v1 templates, asset classes and synthetic seed data are inserted by data migrations or seed scripts as **new rows**.
 - Policy changes at runtime create new version rows (see admin spec); published rows are never updated.
 

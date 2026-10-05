@@ -23,6 +23,6 @@ SQLAlchemy 2.x models and repositories. This is the only layer that talks to the
   - (`customer_id`, `asset_class_code`) on holdings;
   - (`asset_class_code`, `nav_date`) on NAV;
   - one DRAFT per policy type.
-- **Every schema change ships with an Alembic revision** in the same PR. Don't edit merged revisions. Seed and policy data go in as new rows.
+- **Every schema change ships with an Alembic revision** in the same phase. Don't edit revisions from approved phases. Seed and policy data go in as new rows.
 - **No business logic** here: no drift, scoring or allocation maths.
 - **Tests:** `tests/integration/repositories/`, including append-only and immutability guard tests.

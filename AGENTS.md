@@ -64,4 +64,5 @@ An index only. The rules live in the linked files.
 - [docs/business-case.md](docs/business-case.md)
 - [docs/harness/harness-overview.md](docs/harness/harness-overview.md)
 - [.claude/program.md](.claude/program.md) · [.claude/architecture.md](.claude/architecture.md)
-- [docs/prs/](docs/prs/): PR descriptions
+- [docs/phase-reviews/](docs/phase-reviews/): phase reviews
+- [docs/prs/](docs/prs/): earlier PR descriptions (PR-001…PR-003)
