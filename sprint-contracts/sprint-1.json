@@ -1,0 +1,2211 @@
+{
+  "group": "sprint-1",
+  "stories": [
+    "E1-S1",
+    "E1-S2",
+    "E1-S3",
+    "E2-S1",
+    "E3-S1",
+    "E1-S4",
+    "E2-S2",
+    "E3-S2",
+    "E3-S3"
+  ],
+  "features": [
+    "F001",
+    "F002",
+    "F003",
+    "F004",
+    "F005",
+    "F006",
+    "F007",
+    "F008",
+    "F009",
+    "F010",
+    "F011",
+    "F012",
+    "F013",
+    "F014",
+    "F015",
+    "F016",
+    "F017",
+    "F018",
+    "F019",
+    "F020",
+    "F021",
+    "F022",
+    "F023",
+    "F024",
+    "F025",
+    "F026",
+    "F027",
+    "F028",
+    "F029",
+    "F030",
+    "F031",
+    "F032",
+    "F033",
+    "F034",
+    "F035",
+    "F036",
+    "F037",
+    "F038",
+    "F039",
+    "F040",
+    "F041",
+    "F042",
+    "F043",
+    "F044",
+    "F045",
+    "F046",
+    "F047",
+    "F048",
+    "F049",
+    "F050",
+    "F051",
+    "F052",
+    "F053",
+    "F054",
+    "F055",
+    "F056",
+    "F057",
+    "F058",
+    "F059",
+    "F060",
+    "F061",
+    "F062",
+    "F063",
+    "F064",
+    "F065",
+    "F066",
+    "F067",
+    "F068",
+    "F069",
+    "F070",
+    "F071"
+  ],
+  "contract": {
+    "api_checks": [
+      {
+        "id": "api-001",
+        "method": "GET",
+        "path": "/health",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "expected_status": 200,
+        "description": "NFR-07: health reports DB connected (no auth)",
+        "expected_body": {
+          "status": "ok",
+          "db": "connected"
+        }
+      },
+      {
+        "id": "api-002",
+        "method": "GET",
+        "path": "/api/v1/risk-profile/questionnaire",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "expected_status": 401,
+        "description": "NFR-04 (app_spec 5.5): missing token -> 401 UNAUTHENTICATED",
+        "expected_body": {
+          "error": {
+            "code": "UNAUTHENTICATED"
+          }
+        }
+      },
+      {
+        "id": "api-003",
+        "method": "GET",
+        "path": "/api/v1/risk-profile/questionnaire",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-01.1: v1 questionnaire; questions array has exactly 7 entries (orders 1-7: AGE, HORIZON, INCOME_STABILITY, EMERGENCY_FUND, LOSS_REACTION, EXPERIENCE, OBJECTIVE), each with exactly 5 options; NO key named 'points' (nor any band threshold / min_score / max_score) anywhere in the body",
+        "expected_body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "version_no": 1
+        }
+      },
+      {
+        "id": "api-004",
+        "method": "GET",
+        "path": "/api/v1/risk-profile",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-carol"
+        },
+        "expected_status": 200,
+        "description": "AC-02.5 precondition / risk_profile 2.5: no events -> effective band null",
+        "expected_body": {
+          "risk_band": null
+        }
+      },
+      {
+        "id": "api-005",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-carol"
+        },
+        "expected_status": 409,
+        "description": "AC-02.5: carol has no assessment or override -> 409 RISK_PROFILE_REQUIRED",
+        "body": {},
+        "expected_body": {
+          "error": {
+            "code": "RISK_PROFILE_REQUIRED"
+          }
+        }
+      },
+      {
+        "id": "api-006",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 201,
+        "description": "AC-01.2: alice ANS_16 -> total 16, MODERATE; response has assessment_id and created_at",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_30_39"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "Y7_10"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "STABLE_SINGLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "M3_6"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "HOLD"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "FUNDS_LT_3Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "BALANCED"
+            }
+          ]
+        },
+        "expected_body": {
+          "total_score": 16,
+          "computed_band": "MODERATE",
+          "assigned_band": "MODERATE",
+          "applied_caps": [],
+          "policy_version_no": 1
+        },
+        "capture": {
+          "alice_a1": "$.assessment_id"
+        }
+      },
+      {
+        "id": "api-007",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 422,
+        "description": "AC-01.6: ANS_16 without OBJECTIVE -> 422 ANSWER_MISSING; nothing persisted (verified by history count below)",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_30_39"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "Y7_10"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "STABLE_SINGLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "M3_6"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "HOLD"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "FUNDS_LT_3Y"
+            }
+          ]
+        },
+        "expected_body": {
+          "error": {
+            "code": "ANSWER_MISSING"
+          }
+        }
+      },
+      {
+        "id": "api-008",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 422,
+        "description": "AC-01.6: AGE answered GT_10Y -> 422 OPTION_INVALID; nothing persisted",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "GT_10Y"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "Y7_10"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "STABLE_SINGLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "M3_6"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "HOLD"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "FUNDS_LT_3Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "BALANCED"
+            }
+          ]
+        },
+        "expected_body": {
+          "error": {
+            "code": "OPTION_INVALID"
+          }
+        }
+      },
+      {
+        "id": "api-009",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 201,
+        "description": "AC-01.5 (API half): ANS_16 submitted a second time -> identical total_score/computed_band/assigned_band; assessment_id MUST differ from {alice_a1}",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_30_39"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "Y7_10"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "STABLE_SINGLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "M3_6"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "HOLD"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "FUNDS_LT_3Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "BALANCED"
+            }
+          ]
+        },
+        "expected_body": {
+          "total_score": 16,
+          "computed_band": "MODERATE",
+          "assigned_band": "MODERATE",
+          "applied_caps": [],
+          "policy_version_no": 1
+        },
+        "capture": {
+          "alice_a2": "$.assessment_id"
+        }
+      },
+      {
+        "id": "api-010",
+        "method": "GET",
+        "path": "/api/v1/risk-profile",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-01.7: effective band = newest assessment",
+        "expected_body": {
+          "risk_band": "MODERATE",
+          "source": "ASSESSMENT",
+          "source_id": "{alice_a2}"
+        }
+      },
+      {
+        "id": "api-011",
+        "method": "GET",
+        "path": "/api/v1/risk-profile/history",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-01.5/01.6/01.7: response is an array of EXACTLY 2 entries (the two 422s persisted nothing), newest first: [0].id == {alice_a2}, [1].id == {alice_a1}; both type ASSESSMENT, band MODERATE, policy_version_no 1"
+      },
+      {
+        "id": "api-012",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 201,
+        "description": "AC-01.3 (API spot check): bob ANS_0 -> total 0, CONSERVATIVE",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_60_PLUS"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "LT_3Y"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "NO_REGULAR"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "NONE"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "SELL_ALL"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "NONE"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "PRESERVE"
+            }
+          ]
+        },
+        "expected_body": {
+          "total_score": 0,
+          "computed_band": "CONSERVATIVE",
+          "assigned_band": "CONSERVATIVE",
+          "policy_version_no": 1
+        },
+        "capture": {
+          "bob_a1": "$.assessment_id"
+        }
+      },
+      {
+        "id": "api-013",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 201,
+        "description": "AC-02.2: CONSERVATIVE, no goal -> v1 row 20/60/10/10 exactly",
+        "body": {},
+        "expected_body": {
+          "source": "SYSTEM",
+          "risk_band": "CONSERVATIVE",
+          "template_version_no": 1,
+          "goal_id": null,
+          "horizon_months": null,
+          "horizon_rule": "NO_GOAL",
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "20.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "60.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "10.00"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "10.00"
+            }
+          ],
+          "total_pct": "100.00"
+        }
+      },
+      {
+        "id": "api-014",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 201,
+        "description": "AC-01.3 (API spot check): bob ANS_28 -> total 28, AGGRESSIVE, no caps",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_18_29"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "GT_10Y"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "MULTIPLE_STABLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "GT_12M"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "BUY_MORE"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "ACTIVE_GT_7Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "AGGRESSIVE_GROWTH"
+            }
+          ]
+        },
+        "expected_body": {
+          "total_score": 28,
+          "computed_band": "AGGRESSIVE",
+          "assigned_band": "AGGRESSIVE",
+          "applied_caps": [],
+          "policy_version_no": 1
+        },
+        "capture": {
+          "bob_a2": "$.assessment_id"
+        }
+      },
+      {
+        "id": "api-015",
+        "method": "GET",
+        "path": "/api/v1/risk-profile",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 200,
+        "description": "AC-01.7: second assessment's band is now effective",
+        "expected_body": {
+          "risk_band": "AGGRESSIVE",
+          "source": "ASSESSMENT",
+          "source_id": "{bob_a2}"
+        }
+      },
+      {
+        "id": "api-016",
+        "method": "GET",
+        "path": "/api/v1/risk-profile/history",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 200,
+        "description": "AC-01.7: EXACTLY 2 entries, newest first: [0].id == {bob_a2} (AGGRESSIVE), [1].id == {bob_a1} (CONSERVATIVE); both rows still exist"
+      },
+      {
+        "id": "api-017",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 201,
+        "description": "AC-02.2: AGGRESSIVE, no goal -> v1 row 75/15/7.50/2.50 exactly",
+        "body": {},
+        "expected_body": {
+          "risk_band": "AGGRESSIVE",
+          "template_version_no": 1,
+          "horizon_rule": "NO_GOAL",
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "75.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "15.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "7.50"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "2.50"
+            }
+          ],
+          "total_pct": "100.00"
+        }
+      },
+      {
+        "id": "api-018",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 201,
+        "description": "AC-10.6 setup: bob ANS_20 (EMERGENCY_FUND M3_6) under v1 -> total 20, MODERATE (12-20)",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_18_29"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "GT_10Y"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "MULTIPLE_STABLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "M3_6"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "HOLD"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "FUNDS_LT_3Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "BALANCED"
+            }
+          ]
+        },
+        "expected_body": {
+          "total_score": 20,
+          "computed_band": "MODERATE",
+          "assigned_band": "MODERATE",
+          "applied_caps": [],
+          "policy_version_no": 1
+        },
+        "capture": {
+          "bob_a3": "$.assessment_id"
+        }
+      },
+      {
+        "id": "api-019",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-grace"
+        },
+        "expected_status": 201,
+        "description": "AC-01.4: max points except EMERGENCY_FUND NONE (24) -> computed AGGRESSIVE, assigned MODERATE, cap NO_EMERGENCY_FUND",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_18_29"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "GT_10Y"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "MULTIPLE_STABLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "NONE"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "BUY_MORE"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "ACTIVE_GT_7Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "AGGRESSIVE_GROWTH"
+            }
+          ]
+        },
+        "expected_body": {
+          "total_score": 24,
+          "computed_band": "AGGRESSIVE",
+          "assigned_band": "MODERATE",
+          "applied_caps": [
+            "NO_EMERGENCY_FUND"
+          ],
+          "policy_version_no": 1
+        }
+      },
+      {
+        "id": "api-020",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-grace"
+        },
+        "expected_status": 201,
+        "description": "AC-04.3: no goal_id -> primary goal B (P1, 2028-06-30) from 2026-01-15 = 29 months, H_12_35; MODERATE 50-30 -> 20/65/10/5",
+        "body": {},
+        "expected_body": {
+          "risk_band": "MODERATE",
+          "goal_id": "00000000-0000-4000-8000-0000000b0001",
+          "horizon_months": 29,
+          "horizon_rule": "H_12_35",
+          "as_of_date": "2026-01-15",
+          "template_version_no": 1,
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "20.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "65.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "10.00"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "5.00"
+            }
+          ],
+          "total_pct": "100.00"
+        }
+      },
+      {
+        "id": "api-021",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-frank"
+        },
+        "expected_status": 201,
+        "description": "AC-04.1 setup: frank ANS_16 -> MODERATE",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_30_39"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "Y7_10"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "STABLE_SINGLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "M3_6"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "HOLD"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "FUNDS_LT_3Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "BALANCED"
+            }
+          ]
+        },
+        "expected_body": {
+          "total_score": 16,
+          "assigned_band": "MODERATE"
+        }
+      },
+      {
+        "id": "api-022",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-frank"
+        },
+        "expected_status": 201,
+        "description": "AC-04.1: clock 2026-01-15, goal 2030-01-15 -> 48 months, H_36_59, 30/55/10/5",
+        "body": {
+          "goal_id": "00000000-0000-4000-8000-0000000f0001"
+        },
+        "expected_body": {
+          "goal_id": "00000000-0000-4000-8000-0000000f0001",
+          "horizon_months": 48,
+          "horizon_rule": "H_36_59",
+          "as_of_date": "2026-01-15",
+          "template_version_no": 1,
+          "risk_band": "MODERATE",
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "30.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "55.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "10.00"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "5.00"
+            }
+          ],
+          "total_pct": "100.00"
+        },
+        "capture": {
+          "frank_r1": "$.id"
+        }
+      },
+      {
+        "id": "api-023",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-frank"
+        },
+        "expected_status": 201,
+        "description": "AC-04.4: identical request -> identical allocation/horizon_months/horizon_rule/template_version_no; id MUST differ from {frank_r1}",
+        "body": {
+          "goal_id": "00000000-0000-4000-8000-0000000f0001"
+        },
+        "expected_body": {
+          "goal_id": "00000000-0000-4000-8000-0000000f0001",
+          "horizon_months": 48,
+          "horizon_rule": "H_36_59",
+          "as_of_date": "2026-01-15",
+          "template_version_no": 1,
+          "risk_band": "MODERATE",
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "30.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "55.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "10.00"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "5.00"
+            }
+          ],
+          "total_pct": "100.00"
+        },
+        "capture": {
+          "frank_r2": "$.id"
+        }
+      },
+      {
+        "id": "api-024",
+        "method": "GET",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-frank"
+        },
+        "expected_status": 200,
+        "description": "AC-04.4: list has EXACTLY 2 recommendations, newest first: [0].id == {frank_r2}, [1].id == {frank_r1}; identical allocations"
+      },
+      {
+        "id": "api-025",
+        "method": "GET",
+        "path": "/api/v1/recommendations/latest",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-frank"
+        },
+        "expected_status": 200,
+        "description": "AC-04.4 / recommendation 4: latest is the second row",
+        "expected_body": {
+          "id": "{frank_r2}",
+          "horizon_rule": "H_36_59"
+        }
+      },
+      {
+        "id": "api-026",
+        "method": "GET",
+        "path": "/api/v1/recommendations/latest",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 404,
+        "description": "recommendation 4: no recommendation yet -> 404 RECOMMENDATION_NOT_FOUND",
+        "expected_body": {
+          "error": {
+            "code": "RECOMMENDATION_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "id": "api-027",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 201,
+        "description": "AC-02.1: alice MODERATE, no goals -> v1 50/35/10/5, NO_GOAL, total_pct '100.00' (all decimals JSON strings, NFR-01)",
+        "body": {},
+        "expected_body": {
+          "source": "SYSTEM",
+          "risk_band": "MODERATE",
+          "template_version_no": 1,
+          "goal_id": null,
+          "horizon_months": null,
+          "horizon_rule": "NO_GOAL",
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "50.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "35.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "10.00"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "5.00"
+            }
+          ],
+          "total_pct": "100.00"
+        },
+        "capture": {
+          "alice_r1": "$.id"
+        }
+      },
+      {
+        "id": "api-028",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 404,
+        "description": "recommendation 2.2 / NFR-04 ownership: alice cannot use grace's goal; nothing persisted",
+        "body": {
+          "goal_id": "00000000-0000-4000-8000-0000000b0001"
+        },
+        "expected_body": {
+          "error": {
+            "code": "GOAL_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "id": "api-029",
+        "method": "GET",
+        "path": "/api/v1/admin/template-versions",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 403,
+        "description": "AC-10.8: CUSTOMER on admin GET",
+        "expected_body": {
+          "error": {
+            "code": "FORBIDDEN_ROLE"
+          }
+        }
+      },
+      {
+        "id": "api-030",
+        "method": "GET",
+        "path": "/api/v1/admin/template-versions",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-dan"
+        },
+        "expected_status": 403,
+        "description": "AC-10.8: ADVISOR on admin GET",
+        "expected_body": {
+          "error": {
+            "code": "FORBIDDEN_ROLE"
+          }
+        }
+      },
+      {
+        "id": "api-031",
+        "method": "POST",
+        "path": "/api/v1/admin/risk-policies/drafts",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 403,
+        "description": "AC-10.8: CUSTOMER on admin POST (no draft created)",
+        "body": {},
+        "expected_body": {
+          "error": {
+            "code": "FORBIDDEN_ROLE"
+          }
+        }
+      },
+      {
+        "id": "api-032",
+        "method": "PUT",
+        "path": "/api/v1/admin/template-versions/00000000-0000-4000-8000-000000000101",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-dan"
+        },
+        "expected_status": 403,
+        "description": "AC-10.8: ADVISOR on admin PUT",
+        "body": {
+          "definition": {
+            "templates": {
+              "CONSERVATIVE": {
+                "EQUITY": "20.00",
+                "DEBT": "60.00",
+                "GOLD": "10.00",
+                "CASH": "10.00"
+              },
+              "MODERATE": {
+                "EQUITY": "50.00",
+                "DEBT": "35.00",
+                "GOLD": "10.00",
+                "CASH": "5.00"
+              },
+              "AGGRESSIVE": {
+                "EQUITY": "75.00",
+                "DEBT": "15.00",
+                "GOLD": "7.50",
+                "CASH": "2.50"
+              }
+            },
+            "horizon_rules": [
+              {
+                "code": "H_84_PLUS",
+                "min_months": 84,
+                "max_months": null,
+                "shift": "0.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_60_83",
+                "min_months": 60,
+                "max_months": 83,
+                "shift": "10.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_36_59",
+                "min_months": 36,
+                "max_months": 59,
+                "shift": "20.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_12_35",
+                "min_months": 12,
+                "max_months": 35,
+                "shift": "30.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_0_11",
+                "min_months": 0,
+                "max_months": 11,
+                "shift": "ALL",
+                "from": "EQUITY",
+                "to": "CASH"
+              }
+            ],
+            "drift_threshold_pct": "5.00"
+          }
+        },
+        "expected_body": {
+          "error": {
+            "code": "FORBIDDEN_ROLE"
+          }
+        }
+      },
+      {
+        "id": "api-033",
+        "method": "POST",
+        "path": "/api/v1/admin/risk-policies/drafts",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "expected_status": 401,
+        "description": "NFR-04: admin route without token -> 401 UNAUTHENTICATED",
+        "body": {},
+        "expected_body": {
+          "error": {
+            "code": "UNAUTHENTICATED"
+          }
+        }
+      },
+      {
+        "id": "api-034",
+        "method": "GET",
+        "path": "/api/v1/admin/template-versions",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10: admin list -> exactly 1 entry: version_no 1, status PUBLISHED"
+      },
+      {
+        "id": "api-035",
+        "method": "GET",
+        "path": "/api/v1/admin/template-versions/00000000-0000-4000-8000-000000000101",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.2 baseline: v1 definition equals admin_versioning 2.3 / recommendation 2.1 exactly; capture raw definition",
+        "expected_body": {
+          "version_no": 1,
+          "status": "PUBLISHED",
+          "definition": {
+            "templates": {
+              "CONSERVATIVE": {
+                "EQUITY": "20.00",
+                "DEBT": "60.00",
+                "GOLD": "10.00",
+                "CASH": "10.00"
+              },
+              "MODERATE": {
+                "EQUITY": "50.00",
+                "DEBT": "35.00",
+                "GOLD": "10.00",
+                "CASH": "5.00"
+              },
+              "AGGRESSIVE": {
+                "EQUITY": "75.00",
+                "DEBT": "15.00",
+                "GOLD": "7.50",
+                "CASH": "2.50"
+              }
+            },
+            "horizon_rules": [
+              {
+                "code": "H_84_PLUS",
+                "min_months": 84,
+                "max_months": null,
+                "shift": "0.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_60_83",
+                "min_months": 60,
+                "max_months": 83,
+                "shift": "10.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_36_59",
+                "min_months": 36,
+                "max_months": 59,
+                "shift": "20.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_12_35",
+                "min_months": 12,
+                "max_months": 35,
+                "shift": "30.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_0_11",
+                "min_months": 0,
+                "max_months": 11,
+                "shift": "ALL",
+                "from": "EQUITY",
+                "to": "CASH"
+              }
+            ],
+            "drift_threshold_pct": "5.00"
+          }
+        },
+        "capture": {
+          "tpl_v1_def": "$.definition"
+        }
+      },
+      {
+        "id": "api-036",
+        "method": "PUT",
+        "path": "/api/v1/admin/template-versions/00000000-0000-4000-8000-000000000101",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 409,
+        "description": "AC-10.2: PUT on published v1 -> 409 POLICY_VERSION_IMMUTABLE",
+        "body": {
+          "definition": {
+            "templates": {
+              "CONSERVATIVE": {
+                "EQUITY": "20.00",
+                "DEBT": "60.00",
+                "GOLD": "10.00",
+                "CASH": "10.00"
+              },
+              "MODERATE": {
+                "EQUITY": "40.00",
+                "DEBT": "45.00",
+                "GOLD": "10.00",
+                "CASH": "5.00"
+              },
+              "AGGRESSIVE": {
+                "EQUITY": "75.00",
+                "DEBT": "15.00",
+                "GOLD": "7.50",
+                "CASH": "2.50"
+              }
+            },
+            "horizon_rules": [
+              {
+                "code": "H_84_PLUS",
+                "min_months": 84,
+                "max_months": null,
+                "shift": "0.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_60_83",
+                "min_months": 60,
+                "max_months": 83,
+                "shift": "10.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_36_59",
+                "min_months": 36,
+                "max_months": 59,
+                "shift": "20.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_12_35",
+                "min_months": 12,
+                "max_months": 35,
+                "shift": "30.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_0_11",
+                "min_months": 0,
+                "max_months": 11,
+                "shift": "ALL",
+                "from": "EQUITY",
+                "to": "CASH"
+              }
+            ],
+            "drift_threshold_pct": "5.00"
+          }
+        },
+        "expected_body": {
+          "error": {
+            "code": "POLICY_VERSION_IMMUTABLE"
+          }
+        }
+      },
+      {
+        "id": "api-037",
+        "method": "DELETE",
+        "path": "/api/v1/admin/template-versions/00000000-0000-4000-8000-000000000101",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 409,
+        "description": "AC-10.2 / admin 2.1: DELETE on published v1 -> 409 POLICY_VERSION_IMMUTABLE",
+        "expected_body": {
+          "error": {
+            "code": "POLICY_VERSION_IMMUTABLE"
+          }
+        }
+      },
+      {
+        "id": "api-038",
+        "method": "GET",
+        "path": "/api/v1/admin/template-versions/00000000-0000-4000-8000-000000000101",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.2: v1 definition byte-identical to {tpl_v1_def} (MODERATE still 50/35/10/5)",
+        "expected_body": {
+          "status": "PUBLISHED",
+          "definition": {
+            "templates": {
+              "CONSERVATIVE": {
+                "EQUITY": "20.00",
+                "DEBT": "60.00",
+                "GOLD": "10.00",
+                "CASH": "10.00"
+              },
+              "MODERATE": {
+                "EQUITY": "50.00",
+                "DEBT": "35.00",
+                "GOLD": "10.00",
+                "CASH": "5.00"
+              },
+              "AGGRESSIVE": {
+                "EQUITY": "75.00",
+                "DEBT": "15.00",
+                "GOLD": "7.50",
+                "CASH": "2.50"
+              }
+            },
+            "horizon_rules": [
+              {
+                "code": "H_84_PLUS",
+                "min_months": 84,
+                "max_months": null,
+                "shift": "0.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_60_83",
+                "min_months": 60,
+                "max_months": 83,
+                "shift": "10.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_36_59",
+                "min_months": 36,
+                "max_months": 59,
+                "shift": "20.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_12_35",
+                "min_months": 12,
+                "max_months": 35,
+                "shift": "30.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_0_11",
+                "min_months": 0,
+                "max_months": 11,
+                "shift": "ALL",
+                "from": "EQUITY",
+                "to": "CASH"
+              }
+            ],
+            "drift_threshold_pct": "5.00"
+          }
+        }
+      },
+      {
+        "id": "api-039",
+        "method": "POST",
+        "path": "/api/v1/admin/template-versions/drafts",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 201,
+        "description": "AC-10.1 (templates): draft v2 copied from active v1 (definition equals {tpl_v1_def})",
+        "body": {},
+        "expected_body": {
+          "version_no": 2,
+          "status": "DRAFT",
+          "definition": {
+            "templates": {
+              "CONSERVATIVE": {
+                "EQUITY": "20.00",
+                "DEBT": "60.00",
+                "GOLD": "10.00",
+                "CASH": "10.00"
+              },
+              "MODERATE": {
+                "EQUITY": "50.00",
+                "DEBT": "35.00",
+                "GOLD": "10.00",
+                "CASH": "5.00"
+              },
+              "AGGRESSIVE": {
+                "EQUITY": "75.00",
+                "DEBT": "15.00",
+                "GOLD": "7.50",
+                "CASH": "2.50"
+              }
+            },
+            "horizon_rules": [
+              {
+                "code": "H_84_PLUS",
+                "min_months": 84,
+                "max_months": null,
+                "shift": "0.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_60_83",
+                "min_months": 60,
+                "max_months": 83,
+                "shift": "10.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_36_59",
+                "min_months": 36,
+                "max_months": 59,
+                "shift": "20.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_12_35",
+                "min_months": 12,
+                "max_months": 35,
+                "shift": "30.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_0_11",
+                "min_months": 0,
+                "max_months": 11,
+                "shift": "ALL",
+                "from": "EQUITY",
+                "to": "CASH"
+              }
+            ],
+            "drift_threshold_pct": "5.00"
+          }
+        },
+        "capture": {
+          "tpl_draft_id": "$.id"
+        }
+      },
+      {
+        "id": "api-040",
+        "method": "POST",
+        "path": "/api/v1/admin/template-versions/drafts",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 409,
+        "description": "AC-10.7 (template variant): second draft -> 409 DRAFT_EXISTS",
+        "body": {},
+        "expected_body": {
+          "error": {
+            "code": "DRAFT_EXISTS"
+          }
+        }
+      },
+      {
+        "id": "api-041",
+        "method": "PUT",
+        "path": "/api/v1/admin/template-versions/{tpl_draft_id}",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.4 setup: AGGRESSIVE GOLD 7.51 (sum 100.01) storable in a draft",
+        "body": {
+          "definition": {
+            "templates": {
+              "CONSERVATIVE": {
+                "EQUITY": "20.00",
+                "DEBT": "60.00",
+                "GOLD": "10.00",
+                "CASH": "10.00"
+              },
+              "MODERATE": {
+                "EQUITY": "50.00",
+                "DEBT": "35.00",
+                "GOLD": "10.00",
+                "CASH": "5.00"
+              },
+              "AGGRESSIVE": {
+                "EQUITY": "75.00",
+                "DEBT": "15.00",
+                "GOLD": "7.51",
+                "CASH": "2.50"
+              }
+            },
+            "horizon_rules": [
+              {
+                "code": "H_84_PLUS",
+                "min_months": 84,
+                "max_months": null,
+                "shift": "0.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_60_83",
+                "min_months": 60,
+                "max_months": 83,
+                "shift": "10.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_36_59",
+                "min_months": 36,
+                "max_months": 59,
+                "shift": "20.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_12_35",
+                "min_months": 12,
+                "max_months": 35,
+                "shift": "30.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_0_11",
+                "min_months": 0,
+                "max_months": 11,
+                "shift": "ALL",
+                "from": "EQUITY",
+                "to": "CASH"
+              }
+            ],
+            "drift_threshold_pct": "5.00"
+          }
+        }
+      },
+      {
+        "id": "api-042",
+        "method": "POST",
+        "path": "/api/v1/admin/template-versions/{tpl_draft_id}/publish",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 422,
+        "description": "AC-10.4: 422 TEMPLATE_INVALID; error.details.violations[] contains an entry whose text includes both 'AGGRESSIVE' and 'sum=100.01'",
+        "body": {},
+        "expected_body": {
+          "error": {
+            "code": "TEMPLATE_INVALID"
+          }
+        }
+      },
+      {
+        "id": "api-043",
+        "method": "GET",
+        "path": "/api/v1/admin/template-versions/{tpl_draft_id}",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.4: failed publish left v2 as DRAFT",
+        "expected_body": {
+          "version_no": 2,
+          "status": "DRAFT"
+        }
+      },
+      {
+        "id": "api-044",
+        "method": "PUT",
+        "path": "/api/v1/admin/template-versions/{tpl_draft_id}",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 422,
+        "description": "NFR-01 (app_spec 5.1): JSON number for a decimal -> 422 DECIMAL_MUST_BE_STRING",
+        "body": {
+          "definition": {
+            "templates": {
+              "CONSERVATIVE": {
+                "EQUITY": "20.00",
+                "DEBT": "60.00",
+                "GOLD": "10.00",
+                "CASH": "10.00"
+              },
+              "MODERATE": {
+                "EQUITY": "50.00",
+                "DEBT": "35.00",
+                "GOLD": "10.00",
+                "CASH": "5.00"
+              },
+              "AGGRESSIVE": {
+                "EQUITY": "75.00",
+                "DEBT": "15.00",
+                "GOLD": "7.50",
+                "CASH": "2.50"
+              }
+            },
+            "horizon_rules": [
+              {
+                "code": "H_84_PLUS",
+                "min_months": 84,
+                "max_months": null,
+                "shift": "0.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_60_83",
+                "min_months": 60,
+                "max_months": 83,
+                "shift": "10.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_36_59",
+                "min_months": 36,
+                "max_months": 59,
+                "shift": "20.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_12_35",
+                "min_months": 12,
+                "max_months": 35,
+                "shift": "30.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_0_11",
+                "min_months": 0,
+                "max_months": 11,
+                "shift": "ALL",
+                "from": "EQUITY",
+                "to": "CASH"
+              }
+            ],
+            "drift_threshold_pct": 5.0
+          }
+        },
+        "expected_body": {
+          "error": {
+            "code": "DECIMAL_MUST_BE_STRING"
+          }
+        }
+      },
+      {
+        "id": "api-045",
+        "method": "PUT",
+        "path": "/api/v1/admin/template-versions/{tpl_draft_id}",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.5 setup: MODERATE 45/40/10/5 (valid)",
+        "body": {
+          "definition": {
+            "templates": {
+              "CONSERVATIVE": {
+                "EQUITY": "20.00",
+                "DEBT": "60.00",
+                "GOLD": "10.00",
+                "CASH": "10.00"
+              },
+              "MODERATE": {
+                "EQUITY": "45.00",
+                "DEBT": "40.00",
+                "GOLD": "10.00",
+                "CASH": "5.00"
+              },
+              "AGGRESSIVE": {
+                "EQUITY": "75.00",
+                "DEBT": "15.00",
+                "GOLD": "7.50",
+                "CASH": "2.50"
+              }
+            },
+            "horizon_rules": [
+              {
+                "code": "H_84_PLUS",
+                "min_months": 84,
+                "max_months": null,
+                "shift": "0.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_60_83",
+                "min_months": 60,
+                "max_months": 83,
+                "shift": "10.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_36_59",
+                "min_months": 36,
+                "max_months": 59,
+                "shift": "20.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_12_35",
+                "min_months": 12,
+                "max_months": 35,
+                "shift": "30.00",
+                "from": "EQUITY",
+                "to": "DEBT"
+              },
+              {
+                "code": "H_0_11",
+                "min_months": 0,
+                "max_months": 11,
+                "shift": "ALL",
+                "from": "EQUITY",
+                "to": "CASH"
+              }
+            ],
+            "drift_threshold_pct": "5.00"
+          }
+        }
+      },
+      {
+        "id": "api-046",
+        "method": "POST",
+        "path": "/api/v1/admin/template-versions/{tpl_draft_id}/publish",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.5 setup: publish template v2",
+        "body": {},
+        "expected_body": {
+          "version_no": 2,
+          "status": "PUBLISHED"
+        }
+      },
+      {
+        "id": "api-047",
+        "method": "GET",
+        "path": "/api/v1/recommendations/latest",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-10.5: in-flight recommendation unchanged: id {alice_r1}, template v1, 50/35/10/5 (drift clause deferred to holdings sprint)",
+        "expected_body": {
+          "id": "{alice_r1}",
+          "template_version_no": 1,
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "50.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "35.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "10.00"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "5.00"
+            }
+          ],
+          "total_pct": "100.00"
+        }
+      },
+      {
+        "id": "api-048",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 201,
+        "description": "AC-10.5: alice's new recommendation uses template v2 45/40/10/5",
+        "body": {},
+        "expected_body": {
+          "risk_band": "MODERATE",
+          "template_version_no": 2,
+          "horizon_rule": "NO_GOAL",
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "45.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "40.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "10.00"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "5.00"
+            }
+          ],
+          "total_pct": "100.00"
+        },
+        "capture": {
+          "alice_r2": "$.id"
+        }
+      },
+      {
+        "id": "api-049",
+        "method": "GET",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-10.5: list has EXACTLY 2 entries, newest first: [0].id == {alice_r2} (v2), [1].id == {alice_r1} (v1, 50/35/10/5)"
+      },
+      {
+        "id": "api-050",
+        "method": "POST",
+        "path": "/api/v1/admin/risk-policies/drafts",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 201,
+        "description": "AC-10.1: risk policy draft v2 copied from v1 (definition.bands == v1 bands)",
+        "body": {},
+        "expected_body": {
+          "version_no": 2,
+          "status": "DRAFT"
+        },
+        "capture": {
+          "rp_draft_id": "$.id",
+          "rp_draft_def": "$.definition"
+        }
+      },
+      {
+        "id": "api-051",
+        "method": "POST",
+        "path": "/api/v1/admin/risk-policies/drafts",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 409,
+        "description": "AC-10.7: a risk-policy draft exists -> 409 DRAFT_EXISTS",
+        "body": {},
+        "expected_body": {
+          "error": {
+            "code": "DRAFT_EXISTS"
+          }
+        }
+      },
+      {
+        "id": "api-052",
+        "method": "PUT",
+        "path": "/api/v1/admin/risk-policies/{rp_draft_id}",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.1: body = {rp_draft_def} with ONLY bands replaced by [CONSERVATIVE 0-11, MODERATE 12-19, AGGRESSIVE 20-28]",
+        "body": {
+          "definition": "<{rp_draft_def} with bands = [{band: CONSERVATIVE, min_score: 0, max_score: 11}, {band: MODERATE, min_score: 12, max_score: 19}, {band: AGGRESSIVE, min_score: 20, max_score: 28}]>"
+        }
+      },
+      {
+        "id": "api-053",
+        "method": "POST",
+        "path": "/api/v1/admin/risk-policies/{rp_draft_id}/publish",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.1: publish risk policy v2",
+        "body": {},
+        "expected_body": {
+          "version_no": 2,
+          "status": "PUBLISHED"
+        }
+      },
+      {
+        "id": "api-054",
+        "method": "GET",
+        "path": "/api/v1/admin/risk-policies",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.1: exactly 2 entries: version_no 1 PUBLISHED and version_no 2 PUBLISHED"
+      },
+      {
+        "id": "api-055",
+        "method": "GET",
+        "path": "/api/v1/admin/risk-policies/00000000-0000-4000-8000-000000000201",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10.1: v1 unchanged (bands 0-11 / 12-20 / 21-28)",
+        "expected_body": {
+          "version_no": 1,
+          "status": "PUBLISHED",
+          "definition": {
+            "bands": [
+              {
+                "band": "CONSERVATIVE",
+                "min_score": 0,
+                "max_score": 11
+              },
+              {
+                "band": "MODERATE",
+                "min_score": 12,
+                "max_score": 20
+              },
+              {
+                "band": "AGGRESSIVE",
+                "min_score": 21,
+                "max_score": 28
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "api-056",
+        "method": "GET",
+        "path": "/api/v1/risk-profile/questionnaire",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-10.1 / AC-01.8: active policy is now v2; still 7x5 and no 'points'",
+        "expected_body": {
+          "policy_version_id": "{rp_draft_id}",
+          "version_no": 2
+        }
+      },
+      {
+        "id": "api-057",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 409,
+        "description": "AC-01.8: submit with stale v1 policy_version_id -> 409 POLICY_VERSION_STALE",
+        "body": {
+          "policy_version_id": "00000000-0000-4000-8000-000000000201",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_30_39"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "Y7_10"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "STABLE_SINGLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "M3_6"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "HOLD"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "FUNDS_LT_3Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "BALANCED"
+            }
+          ]
+        },
+        "expected_body": {
+          "error": {
+            "code": "POLICY_VERSION_STALE"
+          }
+        }
+      },
+      {
+        "id": "api-058",
+        "method": "GET",
+        "path": "/api/v1/risk-profile/history",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-01.8: stale submission persisted nothing: still EXACTLY 2 entries, [0].id == {alice_a2}"
+      },
+      {
+        "id": "api-059",
+        "method": "GET",
+        "path": "/api/v1/risk-profile",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 200,
+        "description": "AC-10.6: bob keeps MODERATE from his v1 assessment",
+        "expected_body": {
+          "risk_band": "MODERATE",
+          "source": "ASSESSMENT",
+          "source_id": "{bob_a3}"
+        }
+      },
+      {
+        "id": "api-060",
+        "method": "GET",
+        "path": "/api/v1/risk-profile/history",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 200,
+        "description": "AC-10.6: [0] is {bob_a3} with band MODERATE and policy_version_no 1 (3 entries total)"
+      },
+      {
+        "id": "api-061",
+        "method": "POST",
+        "path": "/api/v1/risk-profile/assessments",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 201,
+        "description": "AC-10.6: same ANS_20 under v2 -> AGGRESSIVE (20-28)",
+        "body": {
+          "policy_version_id": "{rp_draft_id}",
+          "answers": [
+            {
+              "question_code": "AGE",
+              "option_code": "AGE_18_29"
+            },
+            {
+              "question_code": "HORIZON",
+              "option_code": "GT_10Y"
+            },
+            {
+              "question_code": "INCOME_STABILITY",
+              "option_code": "MULTIPLE_STABLE"
+            },
+            {
+              "question_code": "EMERGENCY_FUND",
+              "option_code": "M3_6"
+            },
+            {
+              "question_code": "LOSS_REACTION",
+              "option_code": "HOLD"
+            },
+            {
+              "question_code": "EXPERIENCE",
+              "option_code": "FUNDS_LT_3Y"
+            },
+            {
+              "question_code": "OBJECTIVE",
+              "option_code": "BALANCED"
+            }
+          ]
+        },
+        "expected_body": {
+          "total_score": 20,
+          "computed_band": "AGGRESSIVE",
+          "assigned_band": "AGGRESSIVE",
+          "applied_caps": [],
+          "policy_version_no": 2
+        }
+      },
+      {
+        "id": "api-062",
+        "method": "POST",
+        "path": "/api/v1/recommendations",
+        "headers": {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 201,
+        "description": "AC-10.6 / AC-02.2: new effective band flows into a new recommendation under active template v2 (AGGRESSIVE row unchanged 75/15/7.50/2.50)",
+        "body": {},
+        "expected_body": {
+          "risk_band": "AGGRESSIVE",
+          "template_version_no": 2,
+          "allocation": [
+            {
+              "asset_class": "EQUITY",
+              "target_pct": "75.00"
+            },
+            {
+              "asset_class": "DEBT",
+              "target_pct": "15.00"
+            },
+            {
+              "asset_class": "GOLD",
+              "target_pct": "7.50"
+            },
+            {
+              "asset_class": "CASH",
+              "target_pct": "2.50"
+            }
+          ],
+          "total_pct": "100.00"
+        }
+      }
+    ],
+    "playwright_checks": [],
+    "performance_checks": [
+      {
+        "endpoint": "/health",
+        "max_response_time_ms": 1000,
+        "method": "GET"
+      }
+    ],
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "cd backend && poetry run lint-imports -> 0 broken contracts; domain/ imports only stdlib + app.domain. AND cd backend && poetry run pytest ../tests -m ac -> exit 0 with 0 failed, 0 errors, 0 skipped/xfailed among selected tests. AND every scenario ID below appears (in the @pytest.mark.ac(...) argument, the test_ac_NN_ test name, or its docstring) on at least one PASSING test: AC-01.1, AC-01.2, AC-01.3, AC-01.4, AC-01.5, AC-01.6, AC-01.7, AC-01.8, AC-02.1, AC-02.2, AC-02.3, AC-02.4, AC-02.5, AC-04.1, AC-04.2, AC-04.3, AC-04.4, AC-04.5, AC-10.1, AC-10.2, AC-10.3, AC-10.4, AC-10.5, AC-10.6, AC-10.7, AC-10.8. Pure-domain scenarios that are ONLY verifiable here and must assert the exact spec values: AC-01.3 (totals 0/11/12/20/21/28 -> C/C/M/M/A/A, 0 and 11 with EMERGENCY_FUND=NONE), AC-01.5 (ANS_16 scored 100x identical), AC-01.7 (UPDATE on risk_assessments raises AppendOnlyViolation), AC-02.3 (3 bands x months {0,1,11,12,35,36,59,60,83,84,240}: sum == Decimal('100.00'), none negative), AC-02.4 (MODERATE sums 99.99 -> AllocationSumError, nothing persisted), AC-04.2 (all 5 rows of recommendation 2.3 exactly, incl. CONSERVATIVE/24 -> 0/80/10/10 and AGGRESSIVE/6 -> 0/15/7.50/77.50), AC-04.5 (as_of 2026-01-31 -> 2026-02-28=0, 2027-01-31=12, 2025-12-01=0), AC-10.3 (ORM update/delete on PUBLISHED template AND risk policy raises PublishedVersionMutation, rollback leaves definition byte-identical)."
+      },
+      "typing": {
+        "required": true,
+        "description": "cd backend && poetry run mypy -> Success: no issues (strict); cd backend && poetry run ruff check -> clean"
+      },
+      "folder_structure": {
+        "required": true,
+        "description": "Files match specs/design/component-map.md, incl. domain/{bands,risk_band_rules,allocation_template_policy,goal_horizon_policy,template_version_validator}.py; tests tagged per app_spec 6 (@pytest.mark.ac('AC-NN'), test_ac_NN_ names)"
+      },
+      "env_vars": {
+        "required": true,
+        "description": "Every setting (incl. WEALTHWISE_DATABASE_URL, WEALTHWISE_STUB_AUTH_ENABLED, WEALTHWISE_FIXED_CLOCK) documented in backend/.env.example; no secrets in code"
+      },
+      "migrations": {
+        "required": true,
+        "description": "alembic upgrade head on an empty SQLite DB creates all 10 Sprint-1 tables + v1 seed (risk policy v1, template v1, 4 asset classes, 7 users, 5 customers, goals frank/grace A/grace B only; no assessments/recommendations); data migration uses literal values only; partial unique index allows one DRAFT per version table; tests/architecture (append-only guards on risk_assessments/recommendations/recommendation_allocations/audit_events, test_published_templates_immutable, test_allocation_sum_invariant, test_no_float_money, test_band_reassignment_requires_override, test_routes_declare_roles, test_no_pii_in_logs, migration hash lock) all pass"
+      }
+    }
+  }
+}

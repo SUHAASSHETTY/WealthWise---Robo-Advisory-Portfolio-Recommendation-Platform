@@ -86,6 +86,7 @@ React + Vite + TypeScript in `frontend/`:
 
 - Domain functions are pure: same inputs give the same output.
 - "Today" comes from an injectable `Clock` (`core/clock.py`), never `date.today()` inside domain or services. Tests use a fixed clock.
+- `WEALTHWISE_FIXED_CLOCK=<ISO instant>` (evaluator and demo runs) **anchors** the clock: `now()` starts at that instant and advances in real time. `today()` is pinned to the anchor date (for a run shorter than the time left in that day), and record timestamps stay strictly ordered, so "newest" (created_at, then id) is unambiguous. Unit tests that need a frozen instant construct `FixedClock` explicitly.
 - Every generated artefact stores the version IDs and inputs needed to reproduce it.
 
 ### 5.3 Append-only records (NFR-02)
@@ -102,7 +103,7 @@ Every state-changing use case writes an `audit_events` row in the same transacti
 ### 5.5 Authentication and roles (NFR-04)
 
 - `POST /api/v1/auth/login` takes `{username, password}` and returns `{access_token, role, expires_at}`. The token is an HS256 JWT signed with `WEALTHWISE_JWT_SECRET` and lasts 60 minutes.
-- Passwords are hashed with bcrypt. Seeded **synthetic** users: `alice.customer`, `bob.customer`, `carol.customer` (CUSTOMER); `dan.advisor` (ADVISOR); `erin.admin` (ADMIN).
+- Passwords are hashed with bcrypt. Seeded **synthetic** users: `alice.customer`, `bob.customer`, `carol.customer`, `frank.customer`, `grace.customer` (CUSTOMER); `dan.advisor` (ADVISOR); `erin.admin` (ADMIN).
 - **The boundary is the API layer:**
   - every router declares `Depends(require_role(...))`;
   - customer routes resolve the customer from the token (`/me` semantics) and never take a `customer_id` path parameter;
@@ -149,7 +150,7 @@ Errors use the envelope `{"error": {"code": "UPPER_SNAKE", "message": "...", "de
 ### 5.10 Synthetic data
 
 All seed data is fictional:
-- 3 customers with holdings across all 4 asset classes;
+- 5 customers (Alice, Bob, Carol, Frank, Grace; Carol has `kyc_verified = false`), with holdings across all 4 asset classes (holdings are added with the holdings feature);
 - 2 goals per customer;
 - a deterministic NAV series in `backend/app/seed/nav_series.csv` covering at least 30 business days.
 

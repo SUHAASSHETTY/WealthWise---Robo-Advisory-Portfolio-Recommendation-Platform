@@ -1,0 +1,52 @@
+; Layering contracts (app_spec §4.1). Run from backend/: `poetry run lint-imports`.
+; api -> services -> repositories -> domain; core is importable by everything except domain.
+
+[importlinter]
+root_package = app
+include_external_packages = True
+
+[importlinter:contract:layers]
+name = Layers: api > services > repositories > domain (no upward imports)
+type = layers
+layers =
+    app.api
+    app.services
+    app.repositories
+    app.domain
+
+[importlinter:contract:domain-pure]
+name = Domain is pure: no app.core/api/services/repositories, no frameworks
+type = forbidden
+source_modules =
+    app.domain
+forbidden_modules =
+    app.core
+    app.api
+    app.services
+    app.repositories
+    fastapi
+    starlette
+    sqlalchemy
+    pydantic
+    pydantic_settings
+
+[importlinter:contract:core-independent]
+name = Core does not import application layers
+type = forbidden
+source_modules =
+    app.core
+forbidden_modules =
+    app.api
+    app.services
+    app.repositories
+    app.domain
+
+[importlinter:contract:api-not-repositories]
+name = API reaches repositories only through services
+type = forbidden
+source_modules =
+    app.api
+forbidden_modules =
+    app.repositories
+; Direct imports only: the legitimate chain api -> services -> repositories must stay allowed.
+allow_indirect_imports = True

@@ -57,7 +57,7 @@ The **effective risk band** for a customer is the band of the newest event:
 
 Ordering is by `created_at`, then `id`. No mutable "current band" column exists anywhere (NFR-02, NFR-08). With no events, the effective band is `null` and dependent features return `409 RISK_PROFILE_REQUIRED`.
 
-### 2.6 Domain functions (pure, `backend/app/domain/risk/`)
+### 2.6 Domain functions (pure, `backend/app/domain/risk_band_rules.py`)
 
 - `score_answers(policy, answers) -> int`
 - `band_for_score(policy, score) -> RiskBand`

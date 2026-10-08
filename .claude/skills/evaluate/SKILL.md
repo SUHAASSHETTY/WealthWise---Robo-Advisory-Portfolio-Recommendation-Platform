@@ -122,7 +122,7 @@ If `time_ms > max_response_time_ms`, report as WARN (not BLOCK — performance i
 
 For each entry in `playwright_checks`:
 
-1. Use Playwright MCP tools to execute the interaction sequence:
+1. Use Playwright MCP tools to execute the interaction sequence. In WealthWise, the server is registered in `.mcp.json` as `playwright`, so the tools are `mcp__playwright__browser_*`; the plugin-provided `mcp__plugin_playwright_playwright__browser_*` names also work if that plugin is installed.
    - `browser_navigate` — navigate to a URL.
    - `browser_click` — click an element (use `getByRole`, `getByText`, or `getByLabel`; never CSS selectors).
    - `browser_fill_form` — fill form fields.

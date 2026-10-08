@@ -1,0 +1,220 @@
+{
+  "group": "sprint-2",
+  "stories": [
+    "E4-S1",
+    "E4-S2",
+    "E4-S3",
+    "E4-S4"
+  ],
+  "features": [
+    "F072",
+    "F073",
+    "F074",
+    "F075",
+    "F076",
+    "F077",
+    "F078",
+    "F079",
+    "F080",
+    "F081",
+    "F082",
+    "F083"
+  ],
+  "contract": {
+    "api_checks": [
+      {
+        "id": "api-s2-001",
+        "method": "GET",
+        "path": "/api/v1/holdings",
+        "headers": {
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-05.1: Alice initial holdings valued at 2026-01-15 NAVs (total 100000.00)",
+        "expected_body": {
+          "nav_date": "2026-01-15",
+          "total_value": "100000.00",
+          "has_target": true,
+          "template_version_no": 1,
+          "drift_threshold_pct": "5.00",
+          "portfolio_breached": true,
+          "lines": [
+            {
+              "asset_class": "EQUITY",
+              "units": "400.0000",
+              "nav": "150.0000",
+              "current_value": "60000.00",
+              "current_pct": "60.00",
+              "target_pct": "50.00",
+              "drift_pct": "10.00",
+              "breached": true
+            },
+            {
+              "asset_class": "DEBT",
+              "units": "1000.0000",
+              "nav": "25.0000",
+              "current_value": "25000.00",
+              "current_pct": "25.00",
+              "target_pct": "35.00",
+              "drift_pct": "10.00",
+              "breached": true
+            },
+            {
+              "asset_class": "GOLD",
+              "units": "150.0000",
+              "nav": "60.0000",
+              "current_value": "9000.00",
+              "current_pct": "9.00",
+              "target_pct": "10.00",
+              "drift_pct": "1.00",
+              "breached": false
+            },
+            {
+              "asset_class": "CASH",
+              "units": "6000.0000",
+              "nav": "1.0000",
+              "current_value": "6000.00",
+              "current_pct": "6.00",
+              "target_pct": "5.00",
+              "drift_pct": "1.00",
+              "breached": false
+            }
+          ]
+        }
+      },
+      {
+        "id": "api-s2-002",
+        "method": "POST",
+        "path": "/api/v1/admin/nav-refresh",
+        "headers": {
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 201,
+        "description": "AC-05.3 / AC-08.2: Admin triggers NAV refresh -> advances to 2026-01-16 (EQUITY 165.0000)",
+        "expected_body": {
+          "nav_date": "2026-01-16",
+          "prices_loaded": 4
+        }
+      },
+      {
+        "id": "api-s2-003",
+        "method": "GET",
+        "path": "/api/v1/holdings",
+        "headers": {
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-05.3: Alice holdings re-valued at new NAV (total 106000.00, equity % 62.26, drift 12.26)",
+        "expected_body": {
+          "nav_date": "2026-01-16",
+          "total_value": "106000.00",
+          "has_target": true,
+          "template_version_no": 1,
+          "drift_threshold_pct": "5.00",
+          "portfolio_breached": true,
+          "lines": [
+            {
+              "asset_class": "EQUITY",
+              "units": "400.0000",
+              "nav": "165.0000",
+              "current_value": "66000.00",
+              "current_pct": "62.26",
+              "target_pct": "50.00",
+              "drift_pct": "12.26",
+              "breached": true
+            },
+            {
+              "asset_class": "DEBT",
+              "units": "1000.0000",
+              "nav": "25.0000",
+              "current_value": "25000.00",
+              "current_pct": "23.58",
+              "target_pct": "35.00",
+              "drift_pct": "11.42",
+              "breached": true
+            },
+            {
+              "asset_class": "GOLD",
+              "units": "150.0000",
+              "nav": "60.0000",
+              "current_value": "9000.00",
+              "current_pct": "8.49",
+              "target_pct": "10.00",
+              "drift_pct": "1.51",
+              "breached": false
+            },
+            {
+              "asset_class": "CASH",
+              "units": "6000.0000",
+              "nav": "1.0000",
+              "current_value": "6000.00",
+              "current_pct": "5.66",
+              "target_pct": "5.00",
+              "drift_pct": "0.66",
+              "breached": false
+            }
+          ]
+        }
+      },
+      {
+        "id": "api-s2-004",
+        "method": "POST",
+        "path": "/api/v1/admin/nav-refresh?target_date=2026-01-16",
+        "headers": {
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-08.4: Idempotent NAV refresh returns 200 ALREADY_LOADED",
+        "expected_body": {
+          "status": "ALREADY_LOADED"
+        }
+      },
+
+      {
+        "id": "api-s2-005",
+        "method": "GET",
+        "path": "/api/v1/holdings",
+        "headers": {
+          "Authorization": "Bearer stub-token-carol"
+        },
+        "expected_status": 200,
+        "description": "AC-05.5: Carol has holdings but no recommendation -> has_target=false, null targets/drift",
+        "expected_body": {
+          "has_target": false,
+          "recommendation_id": null,
+          "template_version_no": null,
+          "drift_threshold_pct": null,
+          "portfolio_breached": false
+        }
+      },
+      {
+        "id": "api-s2-006",
+        "method": "GET",
+        "path": "/api/v1/holdings",
+        "headers": {
+          "Authorization": "Bearer stub-token-dan"
+        },
+        "expected_status": 403,
+        "description": "NFR-04: Advisor calling /holdings gets 403 FORBIDDEN_ROLE"
+      }
+    ],
+    "playwright_checks": [],
+    "performance_checks": [
+      {
+        "endpoint": "/api/v1/holdings",
+        "max_response_time_ms": 1000,
+        "method": "GET"
+      }
+    ],
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "cd backend && poetry run lint-imports -> 0 broken; domain/drift_policy.py pure; all AC-05 tests tagged and passing"
+      },
+      "typing": {
+        "required": true,
+        "description": "mypy strict clean and ruff clean"
+      }
+    }
+  }
+}

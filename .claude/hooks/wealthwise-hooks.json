@@ -1,0 +1,22 @@
+{
+  "description": "WealthWise guard hooks (packaged by the root plugin.json). Same hooks as registered in .claude/settings.json.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/allocation-sum-invariant-check.js", "timeout": 5000 },
+          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/template-immutability-check.js", "timeout": 5000 },
+          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/pii-redaction-check.js", "timeout": 5000 },
+          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/no-float-money-check.js", "timeout": 5000 }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/template-immutability-check.js", "timeout": 5000 }
+        ]
+      }
+    ]
+  }
+}

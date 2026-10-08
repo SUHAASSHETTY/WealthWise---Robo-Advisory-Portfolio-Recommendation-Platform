@@ -1,0 +1,14 @@
+{
+  "name": "wealthwise-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WealthWise Robo-Advisory & Portfolio Recommendation Platform",
+  "scripts": {
+    "start": "make dev",
+    "dev": "make dev",
+    "test": "make test",
+    "test:frontend": "npm run test --prefix frontend",
+    "test:backend": "make test-backend",
+    "build": "npm run build --prefix frontend"
+  }
+}

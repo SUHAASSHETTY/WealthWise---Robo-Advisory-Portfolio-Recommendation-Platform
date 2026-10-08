@@ -1,0 +1,225 @@
+{
+  "group": "sprint-3",
+  "stories": [
+    "E5-S1",
+    "E5-S2",
+    "E5-S3",
+    "E6-S1",
+    "E6-S2",
+    "E6-S3",
+    "E6-S4",
+    "E6-S5",
+    "E7-S1",
+    "E7-S2",
+    "E7-S3",
+    "E7-S4",
+    "E8-S1",
+    "E8-S2"
+  ],
+  "features": [
+    "F084",
+    "F085",
+    "F086",
+    "F087",
+    "F088",
+    "F089",
+    "F090",
+    "F091",
+    "F092",
+    "F093",
+    "F094",
+    "F095",
+    "F096",
+    "F097",
+    "F098",
+    "F099",
+    "F100"
+  ],
+  "contract": {
+    "api_checks": [
+      {
+        "id": "api-s3-001",
+        "method": "POST",
+        "path": "/api/v1/goals",
+        "headers": {
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "body": {
+          "name": "Daughter's university",
+          "goal_type": "EDUCATION",
+          "target_amount": "50000.00",
+          "target_date": "2032-08-31",
+          "priority": 1,
+          "funding_share_pct": "40.00"
+        },
+        "expected_status": 201,
+        "description": "AC-03.1: Alice creates goal with progress calculated against initial 100000.00 portfolio (40000.00 / 80.00%)",
+        "expected_body": {
+          "name": "Daughter's university",
+          "goal_type": "EDUCATION",
+          "target_amount": "50000.00",
+          "target_date": "2032-08-31",
+          "priority": 1,
+          "funding_share_pct": "40.00",
+          "progress": {
+            "nav_date": "2026-01-15",
+            "current_goal_value": "40000.00",
+            "percent_complete": "80.00",
+            "status": "IN_PROGRESS"
+          }
+        }
+      },
+      {
+        "id": "api-s3-002",
+        "method": "POST",
+        "path": "/api/v1/goals",
+        "headers": {
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "body": {
+          "name": "Retirement corpus",
+          "goal_type": "RETIREMENT",
+          "target_amount": "500000.00",
+          "target_date": "2050-03-31",
+          "priority": 2,
+          "funding_share_pct": "60.00"
+        },
+        "expected_status": 201,
+        "description": "AC-03.2: Alice creates second goal (60.00% share), progress 60000.00 / 12.00%"
+      },
+      {
+        "id": "api-s3-003",
+        "method": "GET",
+        "path": "/api/v1/goals",
+        "headers": {
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 200,
+        "description": "AC-03.2: List Alice goals returned in priority order (University P1 then Retirement P2)"
+      },
+      {
+        "id": "api-s3-004",
+        "method": "POST",
+        "path": "/api/v1/goals",
+        "headers": {
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "body": {
+          "name": "Extra goal",
+          "goal_type": "OTHER",
+          "target_amount": "10000.00",
+          "target_date": "2035-12-31",
+          "priority": 3,
+          "funding_share_pct": "0.01"
+        },
+        "expected_status": 422,
+        "description": "AC-03.4: Third goal exceeding 100.00% cumulative share returns 422 FUNDING_SHARE_EXCEEDS_100"
+      },
+      {
+        "id": "api-s3-005",
+        "method": "POST",
+        "path": "/api/v1/rebalancing/evaluate",
+        "headers": {
+          "Authorization": "Bearer stub-token-alice"
+        },
+        "expected_status": 201,
+        "description": "AC-06.1 / AC-07.1: Rebalancing proposal generated for Alice with exact BUY/SELL quantities and CASH settlement"
+      },
+      {
+        "id": "api-s3-006",
+        "method": "GET",
+        "path": "/api/v1/advisor/customers",
+        "headers": {
+          "Authorization": "Bearer stub-token-dan"
+        },
+        "expected_status": 200,
+        "description": "AC-09.6: Dan (advisor) gets assigned customers (Alice, Bob, Carol)"
+      },
+      {
+        "id": "api-s3-007",
+        "method": "POST",
+        "path": "/api/v1/advisor/customers/00000000-0000-4000-8000-00000000c002/risk-overrides",
+        "headers": {
+          "Authorization": "Bearer stub-token-dan"
+        },
+        "body": {
+          "new_band": "CONSERVATIVE",
+          "reason_code": "CLIENT_CIRCUMSTANCES_CHANGED",
+          "note": "Client retiring in 18 months; needs capital stability."
+        },
+        "expected_status": 201,
+        "description": "AC-09.1: Dan overrides Bob's risk band to CONSERVATIVE with audited reason and note"
+      },
+      {
+        "id": "api-s3-008",
+        "method": "GET",
+        "path": "/api/v1/risk-profile",
+        "headers": {
+          "Authorization": "Bearer stub-token-bob"
+        },
+        "expected_status": 200,
+        "description": "AC-09.1: Bob's effective band reflects ADVISOR_OVERRIDE (CONSERVATIVE)",
+        "expected_body": {
+          "risk_band": "CONSERVATIVE",
+          "source": "ADVISOR_OVERRIDE"
+        }
+      },
+      {
+        "id": "api-s3-009",
+        "method": "POST",
+        "path": "/api/v1/advisor/customers/00000000-0000-4000-8000-00000000c001/manual-recommendations",
+        "headers": {
+          "Authorization": "Bearer stub-token-dan"
+        },
+        "body": {
+          "allocation": [
+            {"asset_class": "EQUITY", "target_pct": "40.00"},
+            {"asset_class": "DEBT", "target_pct": "40.00"},
+            {"asset_class": "GOLD", "target_pct": "10.00"},
+            {"asset_class": "CASH", "target_pct": "10.00"}
+          ],
+          "note": "Custom allocation tailored to client tax and liquidity requirements."
+        },
+        "expected_status": 201,
+        "description": "AC-09.8: Dan logs manual recommendation for Alice summing to 100.00%"
+      },
+      {
+        "id": "api-s3-010",
+        "method": "GET",
+        "path": "/api/v1/admin/asset-classes",
+        "headers": {
+          "Authorization": "Bearer stub-token-erin"
+        },
+        "expected_status": 200,
+        "description": "AC-10: Admin lists all asset classes"
+      }
+    ],
+    "playwright_checks": [],
+    "performance_checks": [
+      {
+        "endpoint": "/api/v1/goals",
+        "max_response_time_ms": 500,
+        "method": "GET"
+      },
+      {
+        "endpoint": "/api/v1/rebalancing/recommendations",
+        "max_response_time_ms": 500,
+        "method": "GET"
+      }
+    ],
+    "architecture_checks": {
+      "layering": {
+        "required": true,
+        "description": "Layering: api > services > repositories > domain (no upward imports); pure domain policies"
+      },
+      "typing": {
+        "required": true,
+        "description": "mypy strict clean and ruff clean"
+      },
+      "override_record_required": {
+        "required": true,
+        "description": "AC-09.7 / NFR-08: Band reassignment cannot exist without an override record"
+      }
+    }
+  }
+}

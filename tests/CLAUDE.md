@@ -1,6 +1,6 @@
 # tests/: backend test suites
 
-All backend tests live here and run from `backend/` with `poetry run pytest` (`testpaths = ["../tests"]`). Frontend unit tests and Playwright E2E live in `frontend/` (see `frontend/CLAUDE.md`).
+All backend tests live here and run from `backend/` with `poetry run pytest ../tests` (config in the root `pytest.ini`). Frontend unit tests and Playwright E2E live in `frontend/` (see `frontend/CLAUDE.md`).
 
 ## Layout
 

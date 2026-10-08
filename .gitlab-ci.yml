@@ -1,0 +1,145 @@
+# WealthWise GitLab CI/CD Pipeline
+# Stages: lint -> test -> architecture -> e2e -> claude-review
+
+stages:
+  - lint
+  - test
+  - architecture
+  - e2e
+  - claude-review
+
+default:
+  interruptible: true
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  POETRY_VIRTUALENVS_IN_PROJECT: "true"
+  POETRY_NO_INTERACTION: "1"
+  WEALTHWISE_STUB_AUTH_ENABLED: "true"
+
+cache:
+  key:
+    files:
+      - backend/poetry.lock
+      - frontend/package-lock.json
+  paths:
+    - .cache/pip
+    - backend/.venv
+    - frontend/node_modules
+
+# ==============================================================================
+# Stage: lint
+# ==============================================================================
+
+lint:backend:
+  stage: lint
+  image: python:3.12-slim
+  before_script:
+    - pip install poetry
+    - cd backend && poetry install --no-root
+  script:
+    - cd backend
+    - poetry run ruff check .
+    - poetry run ruff format --check .
+    - poetry run mypy app
+
+lint:frontend:
+  stage: lint
+  image: node:20-slim
+  before_script:
+    - cd frontend && npm ci
+  script:
+    - cd frontend
+    - npm run lint
+    - npm run typecheck
+
+# ==============================================================================
+# Stage: test
+# ==============================================================================
+
+test:backend:
+  stage: test
+  image: python:3.12-slim
+  before_script:
+    - pip install poetry
+    - cd backend && poetry install
+    - poetry run alembic upgrade head
+  script:
+    - mkdir -p reports
+    - cd backend && poetry run pytest ../tests --cov=app --cov-report=term-missing --cov-report=xml:../coverage.xml --cov-report=html:../reports/coverage-html --junitxml=../reports/junit.xml
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
+    paths:
+      - coverage.xml
+      - reports/
+    reports:
+      junit: reports/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+test:frontend:
+  stage: test
+  image: node:20-slim
+  before_script:
+    - cd frontend && npm ci
+  script:
+    - cd frontend && npm test -- --run
+
+# ==============================================================================
+# Stage: architecture
+# ==============================================================================
+
+architecture:contracts:
+  stage: architecture
+  image: python:3.12-slim
+  before_script:
+    - pip install poetry
+    - cd backend && poetry install
+  script:
+    - cd backend
+    - poetry run lint-imports
+    - poetry run pytest ../tests/architecture/
+
+# ==============================================================================
+# Stage: e2e
+# ==============================================================================
+
+e2e:playwright:
+  stage: e2e
+  image: mcr.microsoft.com/playwright:v1.45.0-jammy
+  before_script:
+    - apt-get update && apt-get install -y python3 python3-pip python3-venv sqlite3
+    - pip install poetry --break-system-packages
+    - cd backend && poetry install && poetry run alembic upgrade head
+    - cd ../frontend && npm ci
+  script:
+    - cd backend && WEALTHWISE_STUB_AUTH_ENABLED=true poetry run uvicorn app.main:app --port 8000 &
+    - sleep 4
+    - cd frontend && npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - frontend/e2e/__snapshots__/
+      - frontend/playwright-report/
+      - frontend/test-results/
+
+# ==============================================================================
+# Stage: claude-review
+# ==============================================================================
+
+claude:spec-review:
+  stage: claude-review
+  image: node:20-slim
+  before_script:
+    - apt-get update && apt-get install -y python3 python3-pip python3-venv git curl
+    - npm install -g @anthropic-ai/claude-code
+    - pip install poetry --break-system-packages
+    - cd backend && poetry install --no-root
+  script:
+    - export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
+    - claude -p "You are a spec-conformance reviewer for WealthWise. Review repository changes against specs/app_spec.md and specs/*.md, verify all Acceptance Criteria (AC-01..AC-10) and NFRs (NFR-01..NFR-08), check that fixed-point Decimal is used without floats, and verify test assertions match Then-clauses."
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'

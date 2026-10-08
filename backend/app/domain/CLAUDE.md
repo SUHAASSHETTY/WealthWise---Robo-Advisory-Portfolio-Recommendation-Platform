@@ -12,18 +12,15 @@ stdlib only: `decimal`, `dataclasses`, `enum`, `datetime` (types only, never `no
 
 | Module | Rules | Spec |
 |---|---|---|
-| `money.py` | `q2`/`q4` quantisers, `Percent` and `Money` helpers, `to_decimal(str)` (rejects float) | app_spec §5.1 |
-| `risk/scoring.py` | `score_answers`, `band_for_score`, `apply_caps`, `assess` | risk_profile §2 |
-| `risk/effective_band.py` | `effective_band(assessments, overrides)` | risk_profile §2.5 |
-| `allocation/templates.py` | `template_for_band`, sum invariant (`AllocationSumError`) | recommendation §2.1, §2.4 |
-| `allocation/horizon.py` | `horizon_months`, `select_rule`, `apply_horizon` | recommendation §2.2 |
-| `allocation/recommend.py` | `recommend(band, template_version, horizon_months)` | recommendation §2.5 |
-| `portfolio/valuation.py` | `value_holdings`, `current_allocation` | holdings §2.1 |
-| `portfolio/drift.py` | `compute_drift` | holdings §2.1 |
-| `rebalancing/proposal.py` | `propose_rebalance` (quantities, settlement, negative-cash guard) | rebalancing §2.2 |
-| `goals/progress.py` | `validate_goal`, `order_goals`, `primary_goal`, `goal_progress` | goal_tracker §2 |
-| `policy/validation.py` | `validate_risk_policy`, `validate_template_version` | admin_versioning §2.2–2.3 |
-| `errors.py` | Typed domain errors (`AllocationSumError`, `OversellError`, `PolicyInvalid`, …) | — |
+| `money.py` | `to_decimal` (rejects float), `q2` half-even, `q4_down` | app_spec §5.1 |
+| `bands.py` | `RiskBand` enum and band ordering | risk_profile §2.2 |
+| `policy.py` | `PolicyStatus` (DRAFT/PUBLISHED) | admin_versioning §2.1 |
+| `allocation/templates.py` | `parse_percentage`, `validate_allocation`, `parse_template_set` (exact-100 invariant) | recommendation §2.1, §2.4 |
+| `risk_band_rules.py` | Questionnaire scoring, score → band, caps, validation, effective band | risk_profile §2 |
+| `allocation_template_policy.py` | Band → template lookup, horizon shift application, `recommend()` | recommendation §2 |
+| `goal_horizon_policy.py` | `horizon_months`, horizon-rule selection, goal ordering and primary goal | recommendation §2.2 |
+| `template_version_validator.py` | Publish validation for template and risk-policy definitions | admin_versioning §2.2–2.3 |
+| Later: `portfolio/`, `rebalancing/`, `goals/` | Drift, rebalancing quantities, goal progress | holdings, rebalancing, goal_tracker |
 
 ## Rules
 

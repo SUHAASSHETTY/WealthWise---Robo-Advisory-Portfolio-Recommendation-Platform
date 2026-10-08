@@ -1,0 +1,257 @@
+{
+  "version_no": 1,
+  "status": "PUBLISHED",
+  "definition": {
+    "questions": [
+      {
+        "code": "AGE",
+        "order": 1,
+        "prompt": "What is your age?",
+        "options": [
+          {
+            "code": "AGE_18_29",
+            "label": "18–29",
+            "points": 4
+          },
+          {
+            "code": "AGE_30_39",
+            "label": "30–39",
+            "points": 3
+          },
+          {
+            "code": "AGE_40_49",
+            "label": "40–49",
+            "points": 2
+          },
+          {
+            "code": "AGE_50_59",
+            "label": "50–59",
+            "points": 1
+          },
+          {
+            "code": "AGE_60_PLUS",
+            "label": "60 or over",
+            "points": 0
+          }
+        ]
+      },
+      {
+        "code": "HORIZON",
+        "order": 2,
+        "prompt": "When will you need most of this money?",
+        "options": [
+          {
+            "code": "LT_3Y",
+            "label": "In under 3 years",
+            "points": 0
+          },
+          {
+            "code": "Y3_5",
+            "label": "In 3–5 years",
+            "points": 1
+          },
+          {
+            "code": "Y5_7",
+            "label": "In 5–7 years",
+            "points": 2
+          },
+          {
+            "code": "Y7_10",
+            "label": "In 7–10 years",
+            "points": 3
+          },
+          {
+            "code": "GT_10Y",
+            "label": "In more than 10 years",
+            "points": 4
+          }
+        ]
+      },
+      {
+        "code": "INCOME_STABILITY",
+        "order": 3,
+        "prompt": "How stable is your income?",
+        "options": [
+          {
+            "code": "NO_REGULAR",
+            "label": "No regular income",
+            "points": 0
+          },
+          {
+            "code": "IRREGULAR",
+            "label": "Irregular",
+            "points": 1
+          },
+          {
+            "code": "STABLE_SINGLE",
+            "label": "Stable, single source",
+            "points": 2
+          },
+          {
+            "code": "STABLE_GROWING",
+            "label": "Stable and growing",
+            "points": 3
+          },
+          {
+            "code": "MULTIPLE_STABLE",
+            "label": "Multiple stable sources",
+            "points": 4
+          }
+        ]
+      },
+      {
+        "code": "EMERGENCY_FUND",
+        "order": 4,
+        "prompt": "How many months of expenses do you hold in savings?",
+        "options": [
+          {
+            "code": "NONE",
+            "label": "None",
+            "points": 0
+          },
+          {
+            "code": "LT_3M",
+            "label": "Less than 3 months",
+            "points": 1
+          },
+          {
+            "code": "M3_6",
+            "label": "3–6 months",
+            "points": 2
+          },
+          {
+            "code": "M6_12",
+            "label": "6–12 months",
+            "points": 3
+          },
+          {
+            "code": "GT_12M",
+            "label": "More than 12 months",
+            "points": 4
+          }
+        ]
+      },
+      {
+        "code": "LOSS_REACTION",
+        "order": 5,
+        "prompt": "If your portfolio fell 20% in one month, you would…",
+        "options": [
+          {
+            "code": "SELL_ALL",
+            "label": "Sell everything",
+            "points": 0
+          },
+          {
+            "code": "SELL_SOME",
+            "label": "Sell some",
+            "points": 1
+          },
+          {
+            "code": "HOLD",
+            "label": "Hold",
+            "points": 2
+          },
+          {
+            "code": "BUY_SOME",
+            "label": "Buy a little more",
+            "points": 3
+          },
+          {
+            "code": "BUY_MORE",
+            "label": "Buy significantly more",
+            "points": 4
+          }
+        ]
+      },
+      {
+        "code": "EXPERIENCE",
+        "order": 6,
+        "prompt": "Which best describes your investing experience?",
+        "options": [
+          {
+            "code": "NONE",
+            "label": "None",
+            "points": 0
+          },
+          {
+            "code": "DEPOSITS_ONLY",
+            "label": "Deposits and savings only",
+            "points": 1
+          },
+          {
+            "code": "FUNDS_LT_3Y",
+            "label": "Funds, under 3 years",
+            "points": 2
+          },
+          {
+            "code": "FUNDS_STOCKS_3_7Y",
+            "label": "Funds or stocks, 3–7 years",
+            "points": 3
+          },
+          {
+            "code": "ACTIVE_GT_7Y",
+            "label": "Active investor, over 7 years",
+            "points": 4
+          }
+        ]
+      },
+      {
+        "code": "OBJECTIVE",
+        "order": 7,
+        "prompt": "What is your main investment objective?",
+        "options": [
+          {
+            "code": "PRESERVE",
+            "label": "Preserve capital",
+            "points": 0
+          },
+          {
+            "code": "INCOME",
+            "label": "Regular income",
+            "points": 1
+          },
+          {
+            "code": "BALANCED",
+            "label": "Balanced",
+            "points": 2
+          },
+          {
+            "code": "GROWTH",
+            "label": "Growth",
+            "points": 3
+          },
+          {
+            "code": "AGGRESSIVE_GROWTH",
+            "label": "Aggressive growth",
+            "points": 4
+          }
+        ]
+      }
+    ],
+    "bands": [
+      {
+        "band": "CONSERVATIVE",
+        "min_score": 0,
+        "max_score": 11
+      },
+      {
+        "band": "MODERATE",
+        "min_score": 12,
+        "max_score": 20
+      },
+      {
+        "band": "AGGRESSIVE",
+        "min_score": 21,
+        "max_score": 28
+      }
+    ],
+    "caps": [
+      {
+        "code": "NO_EMERGENCY_FUND",
+        "question_code": "EMERGENCY_FUND",
+        "option_code": "NONE",
+        "max_band": "MODERATE"
+      }
+    ]
+  }
+}

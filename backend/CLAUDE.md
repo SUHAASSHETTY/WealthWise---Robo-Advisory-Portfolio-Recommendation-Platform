@@ -36,8 +36,8 @@ Read the root `CLAUDE.md` first. This file adds backend-wide rules. Each `app/<l
 
 ## Testing hookup
 
-- `pyproject.toml` sets `[tool.pytest.ini_options] testpaths = ["../tests"]`, `pythonpath = ["."]`, the `markers = ["ac(id): acceptance criterion"]` registration, and `--cov=app --cov-report=xml:../coverage.xml --cov-report=term-missing`.
+- The repo-root `pytest.ini` is the only pytest config: `pythonpath = backend`, `--import-mode=importlib`, the `ac(id)` marker, and `--cov=app --cov-report=xml:../coverage.xml`. Run with `poetry run pytest ../tests` (or explicit `../tests/...` paths) from `backend/`. A bare `poetry run pytest` collects nothing, because `testpaths` only applies when invoked from the rootdir.
 - `pytest-cov` is a declared dev dependency; the coverage artefact `coverage.xml` is kept in the repo (brief §7.4).
-- Import-linter contracts live in `pyproject.toml` (`[tool.importlinter]`):
+- Import-linter contracts live in `backend/.importlinter` (run `poetry run lint-imports` from `backend/`):
   - layers `app.api > app.services > app.repositories > app.domain`;
   - `app.domain` is forbidden from importing `app.core`, `sqlalchemy`, `fastapi` and `pydantic`.

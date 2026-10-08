@@ -1,0 +1,34 @@
+{
+  "name": "wealthwise-substrate",
+  "version": "0.2.0",
+  "description": "WealthWise robo-advisory AI-native substrate: domain agents, Decimal-exact domain skills, sprint/coverage/publish/rubric commands, guard hooks (allocation-sum, template immutability, PII redaction, no-float money) and Playwright MCP. Layers on top of the Claude Harness Engine v1 plugin (.claude/.claude-plugin/plugin.json).",
+  "author": {
+    "name": "Suhaas"
+  },
+  "license": "UNLICENSED",
+  "keywords": ["wealth-management", "robo-advisory", "decimal", "harness", "bc-aine-008"],
+  "agents": [
+    "./.claude/agents/risk-profiler-agent.md",
+    "./.claude/agents/recommendation-engine-agent.md",
+    "./.claude/agents/rebalancing-agent.md",
+    "./.claude/agents/policy-version-validator-agent.md",
+    "./.claude/agents/archtest-author-agent.md",
+    "./.claude/agents/doc-writer.md"
+  ],
+  "skills": [
+    "./.claude/skills/risk-band-scorer",
+    "./.claude/skills/allocation-template-resolver",
+    "./.claude/skills/drift-calculator",
+    "./.claude/skills/rebalancing-quantity-proposer",
+    "./.claude/skills/goal-progress-tracker",
+    "./.claude/skills/spec-to-test-generator"
+  ],
+  "commands": [
+    "./.claude/commands/new-feature-sprint.md",
+    "./.claude/commands/ac-coverage-check.md",
+    "./.claude/commands/publish-template-version.md",
+    "./.claude/commands/rubric-audit.md"
+  ],
+  "hooks": "./.claude/hooks/wealthwise-hooks.json",
+  "mcpServers": "./.mcp.json"
+}

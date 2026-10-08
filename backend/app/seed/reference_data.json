@@ -1,0 +1,132 @@
+{
+  "asset_classes": [
+    {
+      "code": "EQUITY",
+      "name": "Equity",
+      "display_order": 1
+    },
+    {
+      "code": "DEBT",
+      "name": "Debt",
+      "display_order": 2
+    },
+    {
+      "code": "GOLD",
+      "name": "Gold",
+      "display_order": 3
+    },
+    {
+      "code": "CASH",
+      "name": "Cash",
+      "display_order": 4
+    }
+  ],
+  "policy_version_ids": {
+    "risk_policy_v1": "00000000-0000-4000-8000-000000000201",
+    "template_v1": "00000000-0000-4000-8000-000000000101"
+  },
+  "users": [
+    {
+      "id": "00000000-0000-4000-8000-00000000a001",
+      "username": "alice.customer",
+      "role": "CUSTOMER"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a002",
+      "username": "bob.customer",
+      "role": "CUSTOMER"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a003",
+      "username": "carol.customer",
+      "role": "CUSTOMER"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a004",
+      "username": "frank.customer",
+      "role": "CUSTOMER"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a005",
+      "username": "grace.customer",
+      "role": "CUSTOMER"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a101",
+      "username": "dan.advisor",
+      "role": "ADVISOR"
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a201",
+      "username": "erin.admin",
+      "role": "ADMIN"
+    }
+  ],
+  "customers": [
+    {
+      "id": "00000000-0000-4000-8000-00000000c001",
+      "user_id": "00000000-0000-4000-8000-00000000a001",
+      "display_name": "Alice Fernandes",
+      "kyc_verified": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000c002",
+      "user_id": "00000000-0000-4000-8000-00000000a002",
+      "display_name": "Bob Mathew",
+      "kyc_verified": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000c003",
+      "user_id": "00000000-0000-4000-8000-00000000a003",
+      "display_name": "Carol Dsouza",
+      "kyc_verified": false
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000c004",
+      "user_id": "00000000-0000-4000-8000-00000000a004",
+      "display_name": "Frank Okoro",
+      "kyc_verified": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000c005",
+      "user_id": "00000000-0000-4000-8000-00000000a005",
+      "display_name": "Grace Lim",
+      "kyc_verified": true
+    }
+  ],
+  "goals": [
+    {
+      "id": "00000000-0000-4000-8000-0000000f0001",
+      "customer_id": "00000000-0000-4000-8000-00000000c004",
+      "name": "Retirement corpus",
+      "goal_type": "RETIREMENT",
+      "target_amount": "750000.00",
+      "target_date": "2030-01-15",
+      "priority": 1,
+      "funding_share_pct": "100.00",
+      "created_at": "2025-11-01T10:00:00+00:00"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000a0001",
+      "customer_id": "00000000-0000-4000-8000-00000000c005",
+      "name": "Long-term wealth",
+      "goal_type": "OTHER",
+      "target_amount": "1200000.00",
+      "target_date": "2040-01-01",
+      "priority": 2,
+      "funding_share_pct": "60.00",
+      "created_at": "2025-11-01T10:00:00+00:00"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000b0001",
+      "customer_id": "00000000-0000-4000-8000-00000000c005",
+      "name": "Home down payment",
+      "goal_type": "HOME",
+      "target_amount": "300000.00",
+      "target_date": "2028-06-30",
+      "priority": 1,
+      "funding_share_pct": "40.00",
+      "created_at": "2025-11-02T10:00:00+00:00"
+    }
+  ]
+}

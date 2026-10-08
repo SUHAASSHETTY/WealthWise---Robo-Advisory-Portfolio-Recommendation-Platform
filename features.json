@@ -1,0 +1,1597 @@
+[
+  {
+    "id": "F001",
+    "category": "integration",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "alembic upgrade head on an empty SQLite DB creates all 10 Sprint 1 tables with the versioned-policy column set",
+    "steps": [
+      "Create empty SQLite file; cd backend && poetry run alembic upgrade head",
+      "Inspect schema: tables users, customers, asset_classes, risk_policy_versions, template_versions, goals, risk_assessments, recommendations, recommendation_allocations, audit_events exist",
+      "Assert risk_policy_versions and template_versions each have columns id, version_no (unique), status, definition, created_by, created_at, published_by, published_at",
+      "Run poetry run pytest ../tests/integration/repositories/test_schema_migration.py; assert pass"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F002",
+    "category": "integration",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "Only one DRAFT row per version table is allowed (partial unique index)",
+    "steps": [
+      "On a migrated DB insert one DRAFT risk_policy_versions row; assert success",
+      "Insert a second DRAFT risk_policy_versions row; assert sqlalchemy IntegrityError",
+      "Repeat for template_versions; assert the same outcome"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F003",
+    "category": "integration",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "ORM update or delete of a PUBLISHED risk policy or template version raises PublishedVersionMutation and rolls back",
+    "steps": [
+      "Run poetry run pytest ../tests/architecture/test_published_templates_immutable.py ../tests/integration/repositories/test_version_guards.py",
+      "Assert updating definition on a PUBLISHED TemplateVersion and RiskPolicyVersion raises PublishedVersionMutation, and after rollback the definition JSON is byte-identical",
+      "Assert ORM delete on a PUBLISHED row raises PublishedVersionMutation"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F004",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "DRAFT versions can be edited, deleted and transitioned to PUBLISHED",
+    "steps": [
+      "Insert a DRAFT TemplateVersion; update its definition and flush; assert no error",
+      "Set status=PUBLISHED and flush; assert no error",
+      "Insert another DRAFT and delete it; assert the row is gone"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F005",
+    "category": "integration",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "UPDATE or DELETE on any of the four append-only tables raises AppendOnlyViolation",
+    "steps": [
+      "Run poetry run pytest ../tests/architecture/test_append_only_tables.py",
+      "Assert for risk_assessments, recommendations, recommendation_allocations and audit_events: ORM update raises AppendOnlyViolation and ORM delete raises AppendOnlyViolation",
+      "Assert the repositories for these tables expose no update/delete method"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F006",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "Percentages and amounts are stored as DecimalText with no Float or Numeric columns",
+    "steps": [
+      "Run poetry run pytest ../tests/architecture/test_no_float_money.py; assert pass",
+      "Assert recommendation_allocations.target_pct and goals.target_amount use DecimalText(scale=2)",
+      "Round-trip Decimal('7.50') through target_pct; assert the read value equals Decimal('7.50') and the stored SQLite value is TEXT '7.50'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F007",
+    "category": "integration",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "No mutable band column exists and migration files are hash-locked",
+    "steps": [
+      "Run poetry run pytest ../tests/architecture/test_band_reassignment_requires_override.py; assert no table other than risk_assessments and recommendations has a band column",
+      "Run poetry run pytest ../tests/architecture/test_migrations_locked.py; assert pass",
+      "Assert backend/migrations/LOCKED_HASHES.txt exists with lines formatted '<sha256>  <filename>'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F008",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Template validator reports AGGRESSIVE sum=100.01 and accepts the v1 template and the AC-10.5 v2 variant",
+    "steps": [
+      "Call validate_template_version(TEMPLATE_AGGRESSIVE_100_01, {EQUITY, DEBT, GOLD, CASH})",
+      "Assert one violation string contains 'AGGRESSIVE' and 'sum=100.01'",
+      "Assert validate_template_version(TEMPLATE_V1, ...) == [] and validate_template_version(TEMPLATE_V2_AC_10_5, ...) == []"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F009",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Template validator flags every structural rule violation from admin_versioning \u00a72.3",
+    "steps": [
+      "Run poetry run pytest ../tests/unit/domain/test_template_version_validator.py",
+      "Assert a named violation for: missing band; missing asset class; inactive/extra asset class; '10.005'; '100.01' single value; '-1.00'; H_60_83.min_months=61 gap; overlapping rules; shift 'HALF'; from == to; drift_threshold_pct '0.00'; drift_threshold_pct '50.01'; JSON number 50 instead of '50.00'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F010",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Risk policy validator accepts v1 and the AC-10.1 v2 bands (MODERATE 12-19, AGGRESSIVE 20-28)",
+    "steps": [
+      "Call validate_risk_policy(RISK_POLICY_V1); assert []",
+      "Call validate_risk_policy(RISK_POLICY_V2_AC_10_1); assert []"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F011",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Risk policy validator flags question, option, band and cap violations",
+    "steps": [
+      "Run poetry run pytest ../tests/unit/domain/test_template_version_validator.py -k risk_policy",
+      "Assert a violation for: 5 questions; duplicate question code; orders 1,2,4,...; question with 1 option; question with 7 options; points 11; points -1; MODERATE 13-20 gap; last max_score 27 (max achievable 28); bands out of order; cap with unknown question; cap with unknown option; cap with unknown band"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F012",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "RiskBand ordering and min_band behave per spec",
+    "steps": [
+      "Assert list(RiskBand) values == ['CONSERVATIVE','MODERATE','AGGRESSIVE']",
+      "Assert CONSERVATIVE < MODERATE < AGGRESSIVE",
+      "Assert min_band(RiskBand.AGGRESSIVE, RiskBand.MODERATE) == RiskBand.MODERATE"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F013",
+    "category": "integration",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Domain validator and band modules are stdlib-only with 100% branch coverage",
+    "steps": [
+      "Run poetry run pytest ../tests/architecture/test_domain_has_no_framework_imports.py ../tests/architecture/test_layering.py; assert pass",
+      "Run poetry run pytest ../tests/unit/domain --cov=app.domain --cov-branch; assert bands.py and template_version_validator.py report 100%"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F014",
+    "category": "integration",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Seed migration inserts the four asset classes and exactly one PUBLISHED v1 risk policy and v1 template",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head",
+      "Assert asset_classes = EQUITY(1), DEBT(2), GOLD(3), CASH(4), all is_active true",
+      "Assert risk_policy_versions has 1 row: version_no 1, status PUBLISHED, 7 questions, bands 0-11/12-20/21-28, cap NO_EMERGENCY_FUND",
+      "Assert template_versions has 1 row: version_no 1, status PUBLISHED, definition equals admin_versioning \u00a72.3 JSON (MODERATE {EQUITY:'50.00',DEBT:'35.00',GOLD:'10.00',CASH:'5.00'}, drift_threshold_pct '5.00')"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F015",
+    "category": "integration",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Every PUBLISHED template band in the migrated DB sums to exactly 100.00 and seeded definitions pass the validators",
+    "steps": [
+      "Run poetry run pytest ../tests/architecture/test_allocation_sum_invariant.py ../tests/integration/repositories/test_seed_migration.py",
+      "Assert each band of each PUBLISHED template_versions row sums to Decimal('100.00')",
+      "Assert validate_risk_policy and validate_template_version return [] for the seeded v1 definitions"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F016",
+    "category": "integration",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Seed creates 7 synthetic users, 5 customers (carol kyc false) and no assessments or recommendations",
+    "steps": [
+      "Fresh DB: alembic upgrade head",
+      "Assert users: alice.customer, bob.customer, carol.customer, frank.customer, grace.customer (CUSTOMER), dan.advisor (ADVISOR), erin.admin (ADMIN)",
+      "Assert 5 customers rows; carol kyc_verified = false; others true",
+      "Assert risk_assessments, recommendations and audit_events are empty"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F017",
+    "category": "integration",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Seed creates exactly three goals with fixed IDs for frank and grace",
+    "steps": [
+      "Fresh DB: alembic upgrade head",
+      "Assert goals rows: 00000000-0000-4000-8000-0000000f0001 (frank, priority 1, 2030-01-15); 00000000-0000-4000-8000-0000000a0001 (grace, priority 2, 2040-01-01); 00000000-0000-4000-8000-0000000b0001 (grace, priority 1, 2028-06-30)",
+      "Assert alice, bob and carol have 0 goals"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F018",
+    "category": "security",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Stub tokens for frank and grace authenticate as CUSTOMER and resolve to their own customer record",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/auth/whoami (header Authorization: Bearer stub-token-frank); assert 200 {\"username\":\"frank.customer\",\"role\":\"CUSTOMER\"}",
+      "GET /api/v1/auth/whoami (header Authorization: Bearer stub-token-grace); assert 200 role CUSTOMER",
+      "Run poetry run pytest ../tests/integration/services/test_customer_resolver.py; assert each customer username maps to its seeded customer_id and ADVISOR/ADMIN principals raise"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F019",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "WEALTHWISE_FIXED_CLOCK pins the app clock; domain and services never call the wall clock",
+    "steps": [
+      "Run poetry run pytest ../tests/integration/api/test_clock_injection.py; assert app.state.clock.today() == date(2026,1,15) with WEALTHWISE_FIXED_CLOCK=2026-01-15T09:00:00Z and is SystemClock without it",
+      "Run poetry run pytest ../tests/architecture/test_no_wall_clock.py; assert no date.today()/datetime.now() under backend/app/domain or backend/app/services"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F020",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "assess(v1, ANS_16) returns total 16, MODERATE/MODERATE, no caps",
+    "steps": [
+      "Call assess(RISK_POLICY_V1, ANS_16)",
+      "Assert total_score == 16, computed_band == MODERATE, assigned_band == MODERATE, applied_caps == []"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F021",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Band boundaries 0/11/12/20/21/28 map to C, C, M, M, A, A",
+    "steps": [
+      "Call assess(RISK_POLICY_V1, s) for ANS_0, ANS_11, ANS_12, ANS_20, ANS_21, ANS_28",
+      "Assert total_score values 0, 11, 12, 20, 21, 28",
+      "Assert assigned_band values CONSERVATIVE, CONSERVATIVE, MODERATE, MODERATE, AGGRESSIVE, AGGRESSIVE (ANS_0 and ANS_11 have EMERGENCY_FUND=NONE)"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F022",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "NO_EMERGENCY_FUND cap lowers computed AGGRESSIVE (24) to MODERATE",
+    "steps": [
+      "Call assess(RISK_POLICY_V1, ANS_CAP24)",
+      "Assert total_score == 24, computed_band == AGGRESSIVE, assigned_band == MODERATE, applied_caps == ['NO_EMERGENCY_FUND']"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F023",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Scoring is deterministic across 100 runs and independent of answer order",
+    "steps": [
+      "Call assess(RISK_POLICY_V1, ANS_16) 100 times; assert all results are equal",
+      "Call assess with ANS_16 reversed; assert the result equals the original"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F024",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Invalid answer sets raise ANSWER_MISSING, OPTION_INVALID, ANSWER_DUPLICATE and QUESTION_UNKNOWN",
+    "steps": [
+      "ANS_16 without OBJECTIVE -> assert AssessmentValidationError code ANSWER_MISSING",
+      "ANS_16 with AGE=GT_10Y -> assert code OPTION_INVALID",
+      "ANS_16 plus a second AGE answer -> assert code ANSWER_DUPLICATE",
+      "ANS_16 plus question SALARY -> assert code QUESTION_UNKNOWN"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F025",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "effective_band returns None with no events and the newest assessment otherwise, tie-broken by id",
+    "steps": [
+      "Assert effective_band([], []) is None",
+      "Two assessments at 2026-01-15T09:00Z (MODERATE) and 2026-01-15T10:00Z (AGGRESSIVE); assert AGGRESSIVE",
+      "Two assessments with equal created_at; assert the one with the greater id wins"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F026",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Policy is a parameter: ANS_20 is MODERATE under v1 and AGGRESSIVE under the AC-10.1 v2 policy",
+    "steps": [
+      "Assert assess(RISK_POLICY_V1, ANS_20).assigned_band == MODERATE",
+      "Assert assess(RISK_POLICY_V2_AC_10_1, ANS_20).assigned_band == AGGRESSIVE",
+      "Run coverage on app.domain.risk_band_rules; assert 100% branch"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F027",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "horizon_months counts completed calendar months and clamps past dates to 0",
+    "steps": [
+      "Assert horizon_months(2026-01-31, 2026-02-28) == 0",
+      "Assert horizon_months(2026-01-31, 2027-01-31) == 12",
+      "Assert horizon_months(2026-01-31, 2025-12-01) == 0; horizon_months(2026-01-15, 2030-01-15) == 48; horizon_months(2026-01-15, 2028-06-30) == 29"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F028",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "Horizon rule boundaries select the right v1 rule code",
+    "steps": [
+      "For months 0, 11 assert H_0_11; 12, 35 -> H_12_35; 36, 59 -> H_36_59",
+      "For months 60, 83 assert H_60_83; 84, 240 -> H_84_PLUS",
+      "For months None assert NO_GOAL"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F029",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "recommend reproduces all five recommendation \u00a72.3 worked examples exactly",
+    "steps": [
+      "MODERATE/120 -> EQUITY 50.00, DEBT 35.00, GOLD 10.00, CASH 5.00 (H_84_PLUS)",
+      "MODERATE/48 -> 30.00, 55.00, 10.00, 5.00 (H_36_59); AGGRESSIVE/24 -> 45.00, 45.00, 7.50, 2.50 (H_12_35)",
+      "CONSERVATIVE/24 -> 0.00, 80.00, 10.00, 10.00 (H_12_35, shift capped at 20.00); AGGRESSIVE/6 -> 0.00, 15.00, 7.50, 77.50 (H_0_11)"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F030",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "recommend with no goal returns the \u00a72.1 template row for each band",
+    "steps": [
+      "recommend(CONSERVATIVE, TEMPLATE_V1, None) -> 20.00/60.00/10.00/10.00, rule NO_GOAL",
+      "recommend(MODERATE, TEMPLATE_V1, None) -> 50.00/35.00/10.00/5.00",
+      "recommend(AGGRESSIVE, TEMPLATE_V1, None) -> 75.00/15.00/7.50/2.50"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F031",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "Every band x horizon in {0,1,11,12,35,36,59,60,83,84,240} sums to exactly 100.00 with no negatives",
+    "steps": [
+      "Loop over 3 bands x 11 horizons calling recommend(band, TEMPLATE_V1, months)",
+      "Assert each allocation has exactly EQUITY, DEBT, GOLD, CASH, each value >= Decimal('0.00') with exponent -2",
+      "Assert sum == Decimal('100.00') for all 33 cases"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F032",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "A corrupted MODERATE row summing to 99.99 raises AllocationSumError",
+    "steps": [
+      "Build template with MODERATE {EQUITY:'50.00',DEBT:'34.99',GOLD:'10.00',CASH:'5.00'}",
+      "Call recommend(MODERATE, template, None); assert AllocationSumError"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F033",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "primary_goal picks lowest priority, then earliest target_date, then earliest created_at",
+    "steps": [
+      "primary_goal([A(priority 2, 2040-01-01), B(priority 1, 2028-06-30)]) -> B",
+      "Equal priority: earlier target_date wins; equal priority and date: earlier created_at wins",
+      "primary_goal([]) -> None"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F034",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "recommend is deterministic and both modules have 100% branch coverage",
+    "steps": [
+      "Call recommend(MODERATE, TEMPLATE_V1, 48) twice; assert equal Allocation objects",
+      "Run coverage on app.domain.goal_horizon_policy and app.domain.allocation_template_policy; assert 100% branch"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F035",
+    "category": "functional",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "Admin creates a risk-policy draft copied from v1 as version 2",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "POST /api/v1/admin/risk-policies/drafts (header Authorization: Bearer stub-token-erin)",
+      "Assert 201, version_no == 2, status == 'DRAFT', definition equals GET /api/v1/admin/risk-policies/{v1_id} definition"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F036",
+    "category": "functional",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "Admin edits the draft bands to MODERATE 12-19 / AGGRESSIVE 20-28 and publishes v2; v1 remains PUBLISHED and unchanged",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "Record GET /api/v1/admin/risk-policies/{v1_id} body (header Authorization: Bearer stub-token-erin); POST .../drafts -> v2_id",
+      "PUT /api/v1/admin/risk-policies/{v2_id} with definition whose bands are CONSERVATIVE 0-11, MODERATE 12-19, AGGRESSIVE 20-28; assert 200",
+      "POST /api/v1/admin/risk-policies/{v2_id}/publish; assert 200 {\"version_no\": 2, \"status\": \"PUBLISHED\"}",
+      "GET /api/v1/admin/risk-policies; assert two items both status PUBLISHED; GET v1 definition byte-identical to recorded body"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F037",
+    "category": "integration",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "Draft, update and publish each write an audit event without PII",
+    "steps": [
+      "After the publish flow, query audit_events",
+      "Assert actions POLICY_DRAFT_CREATED, POLICY_DRAFT_UPDATED, POLICY_PUBLISHED with actor_role ADMIN",
+      "Assert details contain only ids/version numbers (no usernames, names or percentages)"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F038",
+    "category": "functional",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "PUT and DELETE on PUBLISHED template v1 return 409 POLICY_VERSION_IMMUTABLE and leave it byte-identical",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/admin/template-versions (header Authorization: Bearer stub-token-erin); take v1_id; GET /api/v1/admin/template-versions/{v1_id} and record body",
+      "PUT /api/v1/admin/template-versions/{v1_id} with a modified definition; assert 409 error.code POLICY_VERSION_IMMUTABLE",
+      "DELETE /api/v1/admin/template-versions/{v1_id}; assert 409 POLICY_VERSION_IMMUTABLE",
+      "GET /api/v1/admin/template-versions/{v1_id}; assert definition byte-identical to recorded body"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F039",
+    "category": "functional",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "Publishing an already PUBLISHED version returns 409 ALREADY_PUBLISHED for both policy types",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "POST /api/v1/admin/template-versions/{v1_id}/publish (header Authorization: Bearer stub-token-erin); assert 409 ALREADY_PUBLISHED",
+      "POST /api/v1/admin/risk-policies/{v1_id}/publish; assert 409 ALREADY_PUBLISHED; PUT risk-policies/{v1_id} -> 409 POLICY_VERSION_IMMUTABLE"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F040",
+    "category": "functional",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "Publishing a template draft whose AGGRESSIVE row sums to 100.01 returns 422 TEMPLATE_INVALID naming AGGRESSIVE and sum=100.01",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "POST /api/v1/admin/template-versions/drafts (header Authorization: Bearer stub-token-erin) -> draft_id",
+      "PUT /api/v1/admin/template-versions/{draft_id} with v1 definition but AGGRESSIVE GOLD \"7.51\"; assert 200",
+      "POST /api/v1/admin/template-versions/{draft_id}/publish; assert 422 error.code TEMPLATE_INVALID and some error.details.violations[] item contains 'AGGRESSIVE' and 'sum=100.01'",
+      "GET /api/v1/admin/template-versions/{draft_id}; assert status DRAFT; list shows only v1 PUBLISHED"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F041",
+    "category": "functional",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "Invalid risk-policy draft publish returns 422 POLICY_INVALID; numeric percentages are rejected with 422 DECIMAL_MUST_BE_STRING",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "Create risk-policy draft (header Authorization: Bearer stub-token-erin); PUT definition with only 5 questions; POST publish; assert 422 POLICY_INVALID",
+      "Create template draft; PUT definition with MODERATE EQUITY as JSON number 50 (not \"50.00\"); assert 422 DECIMAL_MUST_BE_STRING"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F042",
+    "category": "functional",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "A second draft request returns 409 DRAFT_EXISTS; deleting the draft allows a new one",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "POST /api/v1/admin/risk-policies/drafts (header Authorization: Bearer stub-token-erin); assert 201",
+      "POST /api/v1/admin/risk-policies/drafts again; assert 409 error.code DRAFT_EXISTS",
+      "Repeat both calls on /api/v1/admin/template-versions/drafts; assert 201 then 409 DRAFT_EXISTS",
+      "DELETE /api/v1/admin/risk-policies/{draft_id}; assert 204; POST .../drafts; assert 201"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F043",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "CUSTOMER and ADVISOR tokens get 403 FORBIDDEN_ROLE on every admin route",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "For each route GET/POST drafts/GET {id}/PUT {id}/DELETE {id}/POST {id}/publish under /api/v1/admin/risk-policies and /api/v1/admin/template-versions:",
+      "call with header Authorization: Bearer stub-token-alice; assert 403 error.code FORBIDDEN_ROLE",
+      "call with header Authorization: Bearer stub-token-dan; assert 403 FORBIDDEN_ROLE"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F044",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "Admin routes without a token return 401 and every non-public route declares require_role",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/admin/risk-policies with no Authorization header; assert 401 error.code UNAUTHENTICATED",
+      "Run poetry run pytest ../tests/architecture/test_routes_declare_roles.py; assert pass"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F045",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Questionnaire returns v1 with 7 ordered questions of 5 options and no points or thresholds",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice)",
+      "Assert 200, version_no == 1, policy_version_id present, question codes in order AGE, HORIZON, INCOME_STABILITY, EMERGENCY_FUND, LOSS_REACTION, EXPERIENCE, OBJECTIVE with order 1..7",
+      "Assert each question has 5 options; assert serialized body contains none of the keys points, bands, min_score, max_score, caps"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F046",
+    "category": "security",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Risk-profile routes reject non-customers and unauthenticated calls",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-dan); assert 403 FORBIDDEN_ROLE",
+      "POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-erin); assert 403 FORBIDDEN_ROLE",
+      "GET /api/v1/risk-profile with no token; assert 401 UNAUTHENTICATED"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F047",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Submitting the AC-01.2 answers returns 201 with total_score 16 and MODERATE",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201",
+      "Assert body total_score == 16, computed_band == 'MODERATE', assigned_band == 'MODERATE', applied_caps == [], policy_version_no == 1, assessment_id and created_at present"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F048",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Submitting ANS_CAP24 returns computed AGGRESSIVE capped to MODERATE",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) with policy_version_id from the questionnaire and answer set ANS_CAP24 (specs/stories/E2-S1.md); assert 201",
+      "Assert total_score == 24, computed_band == 'AGGRESSIVE', assigned_band == 'MODERATE', applied_caps == ['NO_EMERGENCY_FUND']"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F049",
+    "category": "integration",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Each assessment writes exactly one risk_assessments row and one RISK_ASSESSMENT_SUBMITTED audit row",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201",
+      "Query DB: risk_assessments count == 1 for alice with risk_policy_version_id == v1 id; audit_events count == 1 with action RISK_ASSESSMENT_SUBMITTED, entity_id == assessment_id"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F050",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Submitting the same answers twice gives identical scores and two distinct rows",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201 (twice)",
+      "Assert both responses have total_score 16, computed_band MODERATE, assigned_band MODERATE",
+      "Assert assessment_ids differ and risk_assessments has 2 rows for alice"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F051",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Missing OBJECTIVE returns 422 ANSWER_MISSING and AGE=GT_10Y returns 422 OPTION_INVALID with no rows written",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) with ANS_16 minus OBJECTIVE; assert 422 error.code ANSWER_MISSING",
+      "POST with ANS_16 but AGE option GT_10Y; assert 422 error.code OPTION_INVALID",
+      "Assert risk_assessments and audit_events counts are 0"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F052",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Effective band is null before assessment and follows the newest assessment; history is newest first",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile (header Authorization: Bearer stub-token-alice); assert 200 {\"risk_band\": null}",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201; then submit ANS_28",
+      "GET /api/v1/risk-profile; assert risk_band 'AGGRESSIVE', source 'ASSESSMENT', source_id == second assessment_id",
+      "GET /api/v1/risk-profile/history; assert 2 items newest first, type 'ASSESSMENT', bands AGGRESSIVE then MODERATE, policy_version_no 1"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F053",
+    "category": "security",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Customers see only their own risk profile",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201",
+      "GET /api/v1/risk-profile (header Authorization: Bearer stub-token-bob); assert risk_band null",
+      "GET /api/v1/risk-profile/history (header Authorization: Bearer stub-token-bob); assert []"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F054",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Submitting with a stale policy_version_id returns 409 POLICY_VERSION_STALE and writes nothing",
+    "steps": [
+      "Run poetry run pytest ../tests/acceptance/test_ac_risk_profile.py -k stale (fixture inserts a PUBLISHED v2 risk policy via the repository)",
+      "POST /api/v1/risk-profile/assessments with v1 policy_version_id and ANS_16; assert 409 error.code POLICY_VERSION_STALE",
+      "Assert risk_assessments count unchanged"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F055",
+    "category": "security",
+    "story": "E2-S2",
+    "group": "C",
+    "description": "Logs from the risk-profile flow contain IDs only, never usernames, option codes, bands or scores",
+    "steps": [
+      "Run poetry run pytest ../tests/architecture/test_no_pii_in_logs.py",
+      "Assert captured log lines include assessment_id and customer_id",
+      "Assert no log line contains 'alice.customer', 'AGE_30_39', 'MODERATE' or the score value as a customer-bound field"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F056",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "MODERATE customer with no goals gets the v1 MODERATE template with NO_GOAL",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201",
+      "POST /api/v1/recommendations (header Authorization: Bearer stub-token-alice) body {}",
+      "Assert 201, source 'SYSTEM', risk_band 'MODERATE', template_version_no 1, goal_id null, horizon_months null, horizon_rule 'NO_GOAL'",
+      "Assert allocation == [{asset_class:'EQUITY',target_pct:'50.00'},{asset_class:'DEBT',target_pct:'35.00'},{asset_class:'GOLD',target_pct:'10.00'},{asset_class:'CASH',target_pct:'5.00'}] (strings) and total_pct == '100.00'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F057",
+    "category": "integration",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "Stored recommendation pins template_version_id and writes allocation rows and a RECOMMENDATION_CREATED audit event",
+    "steps": [
+      "After the previous flow query the DB",
+      "Assert recommendations row template_version_id == v1 id, risk_band_source_id == alice's assessment_id",
+      "Assert 4 recommendation_allocations rows and 1 audit_events row with action RECOMMENDATION_CREATED"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F058",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "CONSERVATIVE and AGGRESSIVE customers get the exact v1 template rows",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-bob); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-bob) with policy_version_id from the questionnaire and answer set ANS_0 (specs/stories/E2-S1.md); assert 201; POST /api/v1/recommendations (header Authorization: Bearer stub-token-bob) {}",
+      "Assert allocation EQUITY '20.00', DEBT '60.00', GOLD '10.00', CASH '10.00', risk_band 'CONSERVATIVE'",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-bob); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-bob) with policy_version_id from the questionnaire and answer set ANS_28 (specs/stories/E2-S1.md); assert 201; POST /api/v1/recommendations {}",
+      "Assert allocation EQUITY '75.00', DEBT '15.00', GOLD '7.50', CASH '2.50', risk_band 'AGGRESSIVE'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F059",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "Customer with no risk profile gets 409 RISK_PROFILE_REQUIRED and nothing is persisted",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "POST /api/v1/recommendations (header Authorization: Bearer stub-token-carol) {}",
+      "Assert 409 error.code RISK_PROFILE_REQUIRED",
+      "Assert recommendations, recommendation_allocations and audit_events counts are 0"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F060",
+    "category": "security",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "Requesting a recommendation for another customer's goal returns 404 GOAL_NOT_FOUND",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201",
+      "POST /api/v1/recommendations (header Authorization: Bearer stub-token-alice) body {\"goal_id\":\"00000000-0000-4000-8000-0000000b0001\"}",
+      "Assert 404 error.code GOAL_NOT_FOUND and no recommendation row is created"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F061",
+    "category": "integration",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "A corrupted active template (MODERATE sums to 99.99) fails the request and persists nothing",
+    "steps": [
+      "Run poetry run pytest ../tests/integration/services/test_recommendation_service.py -k corrupted (fixture inserts a PUBLISHED template v2 with MODERATE DEBT '34.99')",
+      "Assert recommend for a MODERATE customer raises AllocationSumError (HTTP layer returns an error, not 201)",
+      "Assert recommendations, recommendation_allocations and audit_events counts unchanged"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F062",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "Goal 48 months out at clock 2026-01-15 yields 30.00/55.00/10.00/5.00 with H_36_59",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true WEALTHWISE_FIXED_CLOCK=2026-01-15T09:00:00Z",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-frank); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-frank) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201",
+      "POST /api/v1/recommendations (header Authorization: Bearer stub-token-frank) body {\"goal_id\":\"00000000-0000-4000-8000-0000000f0001\"}",
+      "Assert 201, horizon_months 48, horizon_rule 'H_36_59', as_of_date '2026-01-15'",
+      "Assert allocation EQUITY '30.00', DEBT '55.00', GOLD '10.00', CASH '5.00', total_pct '100.00'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F063",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "Without goal_id the primary goal (priority 1, 2028-06-30) is used: 29 months, H_12_35",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true WEALTHWISE_FIXED_CLOCK=2026-01-15T09:00:00Z",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-grace); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-grace) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201",
+      "POST /api/v1/recommendations (header Authorization: Bearer stub-token-grace) body {}",
+      "Assert 201, goal_id '00000000-0000-4000-8000-0000000b0001', horizon_months 29, horizon_rule 'H_12_35'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F064",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "Two identical requests return identical allocations and create two distinct rows",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true WEALTHWISE_FIXED_CLOCK=2026-01-15T09:00:00Z",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-frank); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-frank) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201",
+      "POST /api/v1/recommendations (header Authorization: Bearer stub-token-frank) body {\"goal_id\":\"00000000-0000-4000-8000-0000000f0001\"} twice",
+      "Assert allocation, horizon_months, horizon_rule and template_version_no are identical; ids differ",
+      "Assert 2 recommendations rows for frank"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F065",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "latest returns the newest recommendation, list is newest first, latest is 404 before any recommendation",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true WEALTHWISE_FIXED_CLOCK=2026-01-15T09:00:00Z",
+      "GET /api/v1/recommendations/latest (header Authorization: Bearer stub-token-frank); assert 404 error.code RECOMMENDATION_NOT_FOUND",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-frank); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-frank) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201; POST /api/v1/recommendations twice",
+      "GET /api/v1/recommendations/latest; assert id == second POST id",
+      "GET /api/v1/recommendations; assert 2 items, first id == second POST id"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F066",
+    "category": "integration",
+    "story": "E3-S2",
+    "group": "D",
+    "description": "Every stored recommendation sums to exactly 100.00",
+    "steps": [
+      "Run poetry run pytest ../tests/architecture/test_allocation_sum_invariant.py",
+      "Assert the test generates recommendations for every band and asserts each stored recommendation's allocation rows sum to Decimal('100.00')"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F067",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "E",
+    "description": "After template v2 (MODERATE 45/40/10/5) is published, alice's latest recommendation still shows v1 50/35/10/5",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-alice); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-alice) body {\"policy_version_id\": <questionnaire.policy_version_id>, \"answers\": [{\"question_code\":\"AGE\",\"option_code\":\"AGE_30_39\"},{\"question_code\":\"HORIZON\",\"option_code\":\"Y7_10\"},{\"question_code\":\"INCOME_STABILITY\",\"option_code\":\"STABLE_SINGLE\"},{\"question_code\":\"EMERGENCY_FUND\",\"option_code\":\"M3_6\"},{\"question_code\":\"LOSS_REACTION\",\"option_code\":\"HOLD\"},{\"question_code\":\"EXPERIENCE\",\"option_code\":\"FUNDS_LT_3Y\"},{\"question_code\":\"OBJECTIVE\",\"option_code\":\"BALANCED\"}]}; assert 201; POST /api/v1/recommendations (header Authorization: Bearer stub-token-alice) {}; assert template_version_no 1",
+      "As erin: POST /api/v1/admin/template-versions/drafts; PUT /api/v1/admin/template-versions/{draft_id} with MODERATE {EQUITY:\"45.00\",DEBT:\"40.00\",GOLD:\"10.00\",CASH:\"5.00\"}; POST .../{draft_id}/publish; assert 200 version_no 2",
+      "GET /api/v1/recommendations/latest (header Authorization: Bearer stub-token-alice); assert template_version_no 1 and allocation '50.00','35.00','10.00','5.00'",
+      "Assert DB recommendations.template_version_id == v1 id"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F068",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "E",
+    "description": "alice's new recommendation after the publish uses template v2 45/40/10/5",
+    "steps": [
+      "Continue from the previous feature",
+      "POST /api/v1/recommendations (header Authorization: Bearer stub-token-alice) {}; assert 201 template_version_no 2, allocation EQUITY '45.00', DEBT '40.00', GOLD '10.00', CASH '5.00'",
+      "GET /api/v1/recommendations/latest; assert template_version_no 2",
+      "GET /api/v1/recommendations; assert 2 items, first has template_version_no 2, second 1"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F069",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "E",
+    "description": "bob's MODERATE band from v1 survives publication of risk policy v2",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-bob); POST /api/v1/risk-profile/assessments (header Authorization: Bearer stub-token-bob) with policy_version_id from the questionnaire and answer set ANS_20 (specs/stories/E2-S1.md); assert 201; assert assigned_band 'MODERATE', policy_version_no 1",
+      "As erin: create risk-policy draft, PUT bands MODERATE 12-19 and AGGRESSIVE 20-28, publish; assert 200 version_no 2",
+      "GET /api/v1/risk-profile (header Authorization: Bearer stub-token-bob); assert risk_band 'MODERATE'",
+      "GET /api/v1/risk-profile/history; assert 1 item with policy_version_no 1"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F070",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "E",
+    "description": "After v2 is published a stale v1 submission is 409 and the same answers under v2 yield AGGRESSIVE",
+    "steps": [
+      "Continue from the previous feature",
+      "GET /api/v1/risk-profile/questionnaire (header Authorization: Bearer stub-token-bob); assert version_no 2",
+      "POST /api/v1/risk-profile/assessments with v1 policy_version_id and ANS_20; assert 409 error.code POLICY_VERSION_STALE",
+      "POST with v2 policy_version_id and ANS_20; assert 201 total_score 20, assigned_band 'AGGRESSIVE', policy_version_no 2",
+      "GET /api/v1/risk-profile; assert risk_band 'AGGRESSIVE'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F071",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "E",
+    "description": "The re-assessed effective band flows into a new recommendation",
+    "steps": [
+      "Continue from the previous feature (template v1 active)",
+      "POST /api/v1/recommendations (header Authorization: Bearer stub-token-bob) {}",
+      "Assert 201, risk_band 'AGGRESSIVE', allocation EQUITY '75.00', DEBT '15.00', GOLD '7.50', CASH '2.50'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-05T23:59:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F072",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "sprint-2",
+    "description": "Customer holdings valuation per asset class at initial 2026-01-15 NAVs (Alice 100000.00 total)",
+    "steps": [
+      "Fresh DB: cd backend && poetry run alembic upgrade head; start app with WEALTHWISE_STUB_AUTH_ENABLED=true",
+      "GET /api/v1/holdings (header Authorization: Bearer stub-token-alice); assert 200",
+      "Assert total_value '100000.00', nav_date '2026-01-15', 4 lines matching seeded units × NAV"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F073",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "sprint-2",
+    "description": "Asset class percentage calculation with half-even rounding and 100.00% sum reconciliation",
+    "steps": [
+      "GET /api/v1/holdings (header Authorization: Bearer stub-token-alice); assert 200",
+      "Assert sum of current_pct across all lines equals '100.00' (60.00 + 25.00 + 9.00 + 6.00)"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F074",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "sprint-2",
+    "description": "Target allocation resolution against customer's latest active recommendation",
+    "steps": [
+      "Submit Alice assessment ANS_16 and create recommendation -> MODERATE (50/35/10/5)",
+      "GET /api/v1/holdings (header Authorization: Bearer stub-token-alice); assert 200",
+      "Assert target_pct: EQUITY '50.00', DEBT '35.00', GOLD '10.00', CASH '5.00'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F075",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "sprint-2",
+    "description": "Allocation drift calculation abs(current% - target%) per asset class",
+    "steps": [
+      "GET /api/v1/holdings (header Authorization: Bearer stub-token-alice); assert 200",
+      "Assert drift_pct: EQUITY '10.00', DEBT '10.00', GOLD '1.00', CASH '1.00'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F076",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "sprint-2",
+    "description": "Version-pinned threshold comparison (drift > threshold strict) from recommendation template version",
+    "steps": [
+      "GET /api/v1/holdings (header Authorization: Bearer stub-token-alice); assert 200",
+      "Assert drift_threshold_pct '5.00'; breached true for EQUITY and DEBT (10.00 > 5.00), false for GOLD and CASH (1.00 < 5.00)"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F077",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "sprint-2",
+    "description": "Portfolio breached flag set to true when any asset class drift strictly exceeds threshold",
+    "steps": [
+      "GET /api/v1/holdings (header Authorization: Bearer stub-token-alice); assert 200",
+      "Assert portfolio_breached is true"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F078",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "sprint-2",
+    "description": "Customer with holdings but no recommendation returns has_target: false, null targets/drift, no breach",
+    "steps": [
+      "GET /api/v1/holdings (header Authorization: Bearer stub-token-carol); assert 200",
+      "Assert has_target is false, recommendation_id is null, drift_threshold_pct is null, portfolio_breached is false",
+      "Assert every line has target_pct null, drift_pct null, breached null"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F079",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "sprint-2",
+    "description": "Admin daily NAV refresh advances date in nav_series.csv and inserts nav_prices rows",
+    "steps": [
+      "POST /api/v1/admin/nav-refresh (header Authorization: Bearer stub-token-erin); assert 201",
+      "Assert nav_date '2026-01-16', prices_loaded 4"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F080",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "sprint-2",
+    "description": "Re-valuation of customer holdings upon NAV refresh reflects latest market prices (Alice 106000.00 at 2026-01-16)",
+    "steps": [
+      "GET /api/v1/holdings (header Authorization: Bearer stub-token-alice); assert 200",
+      "Assert total_value '106000.00', nav_date '2026-01-16', EQUITY value '66000.00' (62.26%), DEBT value '25000.00' (23.58%)"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F081",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "sprint-2",
+    "description": "Idempotent NAV refresh for already loaded date returns 200 status: ALREADY_LOADED",
+    "steps": [
+      "POST /api/v1/admin/nav-refresh?target_date=2026-01-16 (header Authorization: Bearer stub-token-erin); assert 200",
+      "Assert status 'ALREADY_LOADED'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F082",
+    "category": "functional",
+    "story": "E4-S4",
+    "group": "sprint-2",
+    "description": "Goal progress calculation upon NAV refresh (current_goal_value, percent_complete, status)",
+    "steps": [
+      "Verify goal_progress_snapshots table contains rows with reason 'NAV_REFRESH' after refresh",
+      "Assert percent_complete = q2(current_goal_value / target_amount * 100), status 'IN_PROGRESS' or 'ACHIEVED'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F083",
+    "category": "security",
+    "story": "E4-S1",
+    "group": "sprint-2",
+    "description": "Role isolation: GET /holdings restricted to CUSTOMER; POST /admin/nav-refresh restricted to ADMIN",
+    "steps": [
+      "GET /api/v1/holdings with stub-token-dan (ADVISOR); assert 403 FORBIDDEN_ROLE",
+      "POST /api/v1/admin/nav-refresh with stub-token-alice (CUSTOMER); assert 403 FORBIDDEN_ROLE",
+      "POST /api/v1/admin/nav-refresh with stub-token-dan (ADVISOR); assert 403 FORBIDDEN_ROLE"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:30:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F084",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "sprint-3",
+    "description": "Customer creates goal with priority, target amount, target date, and funding share, with initial progress calculated",
+    "steps": [
+      "POST /api/v1/goals (header Authorization: Bearer stub-token-alice) with Education goal, priority 1, funding_share_pct '40.00'; assert 201",
+      "Assert current_goal_value '40000.00', percent_complete '80.00', status 'IN_PROGRESS'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F085",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "sprint-3",
+    "description": "Multiple goals per customer returned ordered by priority (P1, P2)",
+    "steps": [
+      "POST /api/v1/goals (header Authorization: Bearer stub-token-alice) with Retirement goal, priority 2, funding_share_pct '60.00'; assert 201",
+      "GET /api/v1/goals (header Authorization: Bearer stub-token-alice); assert 2 items ordered by priority ascending"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F086",
+    "category": "functional",
+    "story": "E5-S2",
+    "group": "sprint-3",
+    "description": "Cumulative funding share across active goals strictly capped at 100.00% (422 FUNDING_SHARE_EXCEEDS_100)",
+    "steps": [
+      "POST /api/v1/goals (header Authorization: Bearer stub-token-alice) with third goal having funding_share_pct '0.01'; assert 422 FUNDING_SHARE_EXCEEDS_100"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F087",
+    "category": "functional",
+    "story": "E5-S3",
+    "group": "sprint-3",
+    "description": "Goal progress snapshots created and evaluated on goal creation and NAV refresh",
+    "steps": [
+      "POST /api/v1/goals; verify initial snapshot created in goal_progress_snapshots",
+      "POST /api/v1/admin/nav-refresh; verify progress snapshot recorded for all active customer goals"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F088",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "sprint-3",
+    "description": "Rebalancing evaluation triggers when asset class drift strictly exceeds threshold",
+    "steps": [
+      "POST /api/v1/rebalancing/evaluate (header Authorization: Bearer stub-token-alice); assert 201 proposal returned with status PROPOSED"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F089",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "sprint-3",
+    "description": "Rebalancing proposal generates exact BUY/SELL quantities (ROUND_DOWN 4dp) and CASH settlement",
+    "steps": [
+      "POST /api/v1/rebalancing/evaluate; assert proposal lines have action SELL/BUY/HOLD, units quantised 4dp ROUND_DOWN, trade_value 2dp, and cash_settlement line"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F090",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "sprint-3",
+    "description": "Rebalancing engine prevents negative CASH via step-down guard",
+    "steps": [
+      "Evaluate rebalancing with insufficient cash; assert BUY trades stepped down proportionally or omitted so post-rebalance cash >= 0"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F091",
+    "category": "functional",
+    "story": "E6-S3",
+    "group": "sprint-3",
+    "description": "Customer accepts rebalancing proposal; records append-only decision and generates FILLED_STUB orders",
+    "steps": [
+      "POST /api/v1/rebalancing/recommendations/{id}/accept (header Authorization: Bearer stub-token-alice); assert 200 status ACCEPTED, orders placed with FILLED_STUB"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F092",
+    "category": "functional",
+    "story": "E6-S4",
+    "group": "sprint-3",
+    "description": "Customer dismisses rebalancing proposal with audited reason",
+    "steps": [
+      "POST /api/v1/rebalancing/recommendations/{id}/dismiss (header Authorization: Bearer stub-token-alice) with reason; assert 200 status DISMISSED and decision recorded"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F093",
+    "category": "functional",
+    "story": "E6-S5",
+    "group": "sprint-3",
+    "description": "List rebalancing recommendation history (append-only audit)",
+    "steps": [
+      "GET /api/v1/rebalancing/recommendations (header Authorization: Bearer stub-token-alice); assert list returned newest first"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F094",
+    "category": "functional",
+    "story": "E7-S1",
+    "group": "sprint-3",
+    "description": "Advisor retrieves assigned customer list with portfolio drift breach indicators",
+    "steps": [
+      "GET /api/v1/advisor/customers (header Authorization: Bearer stub-token-dan); assert 200 with list of assigned customers (Alice, Bob, Carol) and portfolio_breached flags"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F095",
+    "category": "functional",
+    "story": "E7-S2",
+    "group": "sprint-3",
+    "description": "Advisor views detailed customer portfolio, holdings, goals, and recommendations",
+    "steps": [
+      "GET /api/v1/advisor/customers/{id}/portfolio (header Authorization: Bearer stub-token-dan); assert 200 with full customer profile, holdings, drift, goals, and recommendation history"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F096",
+    "category": "functional",
+    "story": "E7-S3",
+    "group": "sprint-3",
+    "description": "Advisor overrides customer risk band with reason code and note; creates immutable audit record",
+    "steps": [
+      "POST /api/v1/advisor/customers/{id}/risk-overrides (header Authorization: Bearer stub-token-dan) with new_band, reason_code, note; assert 201",
+      "Assert risk_band_overrides row created and audit_events record created"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F097",
+    "category": "functional",
+    "story": "E7-S3",
+    "group": "sprint-3",
+    "description": "Customer effective risk band reflects ADVISOR_OVERRIDE",
+    "steps": [
+      "GET /api/v1/risk-profile (header Authorization: Bearer stub-token-bob); assert risk_band 'CONSERVATIVE', source 'ADVISOR_OVERRIDE'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F098",
+    "category": "functional",
+    "story": "E7-S4",
+    "group": "sprint-3",
+    "description": "Advisor creates manual recommendation for customer ensuring allocations sum to 100.00%",
+    "steps": [
+      "POST /api/v1/advisor/customers/{id}/manual-recommendations (header Authorization: Bearer stub-token-dan) with allocation summing to 100.00% and note; assert 201 recommendation_type 'ADVISOR_MANUAL'"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F099",
+    "category": "functional",
+    "story": "E8-S1",
+    "group": "sprint-3",
+    "description": "Admin manages asset classes (GET list and POST create new asset class)",
+    "steps": [
+      "GET /api/v1/admin/asset-classes (header Authorization: Bearer stub-token-erin); assert 200 list of asset classes",
+      "POST /api/v1/admin/asset-classes with code, name, display_order; assert 201"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F100",
+    "category": "functional",
+    "story": "E8-S2",
+    "group": "sprint-3",
+    "description": "Admin asset class PATCH and prevention of deactivating asset classes in active use (409 ASSET_CLASS_IN_USE)",
+    "steps": [
+      "PATCH /api/v1/admin/asset-classes/EQUITY (header Authorization: Bearer stub-token-erin) with is_active: false; assert 409 ASSET_CLASS_IN_USE",
+      "PATCH with name/display_order update; assert 200"
+    ],
+    "passes": true,
+    "last_evaluated": "2026-10-06T01:25:00Z",
+    "failure_reason": null,
+    "failure_layer": null
+  }
+]
+

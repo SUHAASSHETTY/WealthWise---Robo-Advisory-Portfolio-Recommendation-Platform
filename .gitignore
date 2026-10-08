@@ -1,4 +1,10 @@
-.claude/state/
+# Harness state: keep the evidence files the rubric looks for; ignore transient state (e.g. pending-reviews.jsonl)
+.claude/state/*
+!.claude/state/eval-scores.json
+!.claude/state/iteration-log.md
+!.claude/state/failures.md
+!.claude/state/learned-rules.md
+!.claude/state/coverage-baseline.txt
 node_modules/
 dist/
 build/
@@ -14,3 +20,11 @@ __pycache__/
 
 # Original company Harness kept as read-only reference, not committed
 claude_harness_eng_v1/
+
+# Local artefacts (Phase 03)
+*.db
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/

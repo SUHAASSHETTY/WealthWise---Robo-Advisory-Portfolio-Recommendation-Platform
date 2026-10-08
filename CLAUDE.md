@@ -7,7 +7,7 @@ Capstone BC-AINE-008. Brief: `docs/AI Native Engineer Capstone - BC-008 WealthWi
 
 1. **No hand-coding.** Agents generate all production code, tests and migrations. The human reviews. Humans edit only specs, CLAUDE.md files, agents, skills, commands, hooks and docs.
 2. **The spec is the truth.** If code and spec disagree, update the spec deliberately first (and record the change in the phase review), then regenerate the code. Never implement behaviour a spec doesn't describe.
-3. **No git.** Never run any `git` command (including `status`, `log` and `diff`), and never run `gh`. Version control is handled by the human.
+3. **No git writes.** Claude never runs `git commit`, `checkout`/`switch`, `branch`, `merge`, `push`, `reset`, `rebase` or `gh`. Read-only `git status`/`git diff`/`git log` are allowed to report changes. The human creates branches, commits, merges with `--no-ff`, and pushes.
 4. **Phase workflow.** Each phase ends with `docs/phase-reviews/PHASE-NN-<name>.md` containing Summary, Files changed, ACs covered, **real** test output (pasted from the actual run, never invented) and a Review checklist. Then **stop** for human approval. Don't start the next phase until the human approves.
 5. **Synthetic data only.** No real or confidential customer data, anywhere.
 6. **NFR-01: Decimal only.** Money, percentages, units, NAV and drift use `decimal.Decimal`, built from `str`/`int`, never `float`. Rounding rules are in `specs/app_spec.md` §5.1. Store as TEXT via `DecimalText`; serialise as JSON strings.
@@ -51,14 +51,14 @@ Layering is **api → services → repositories → domain**; `core` is importab
 
 ## Run commands
 
-These are the target commands; the scaffold phase creates the config they depend on.
+Poetry lives at `~/.local/bin/poetry` on this machine. The backend venv uses Python 3.12 (installed via `uv`).
 
 ```bash
 # backend (always from backend/)
 cd backend && poetry install
 cd backend && poetry run alembic upgrade head
-cd backend && poetry run uvicorn app.main:app --reload --port 8000   # http://localhost:8000/health
-cd backend && poetry run pytest                 # testpaths = ../tests; writes ../coverage.xml
+cd backend && WEALTHWISE_STUB_AUTH_ENABLED=true poetry run uvicorn app.main:app --reload --port 8000 --no-access-log   # middleware writes JSON request logs
+cd backend && poetry run pytest ../tests         # config: root pytest.ini; writes ../coverage.xml
 cd backend && poetry run ruff check . && poetry run ruff format --check .
 cd backend && poetry run mypy app
 cd backend && poetry run lint-imports
@@ -79,7 +79,7 @@ The Harness hooks and gates call `uv run …`. In this repo the equivalent is `p
 2. **Spec change first** if behaviour must differ from the spec. Edit `specs/*`, and list the change under "Spec changes" in the phase review.
 3. **TDD:** write a failing test tagged with the AC (`@pytest.mark.ac("AC-NN")`, named `test_ac_NN_…`) and run it to capture the **red** output. Then implement, run again for **green**, and refactor. Paste the red and green excerpts into the phase review.
 4. **Gates:** all tests pass, coverage ≥ 80% (target 100% on `domain/`), and ruff, mypy, lint-imports and Playwright (once the UI exists) pass.
-5. **Phase review:** write `docs/phase-reviews/PHASE-NN-<name>.md` with Summary, Files changed, ACs covered, real test output and Review checklist. **Stop** and wait for approval.
+5. **Phase review:** write `docs/phase-reviews/PHASE-NN-<name>.md` with Summary, Files changed, ACs covered, real test output and Review checklist. Leave all changes uncommitted, then **stop** and wait for approval. The human commits.
 6. **Record knowledge:** recurring mistakes go to `docs/knowledge-deposits.md`; fix loops go to `docs/fix-loops/`.
 
 ## How the Harness is used here
@@ -122,12 +122,15 @@ The generator never evaluates its own work.
 | `sprint-contracts/<group>.json` | Negotiated done-criteria; immutable once finalised |
 | `specs/reviews/` | `evaluator-report.md` (`VERDICT:` line), `eval-failures-NNN.json`, `security-review.md` |
 
-### No-git adaptations
+### Git adaptations
 
-- `/auto` normally commits on PASS, and runs `git checkout -- .` or `git revert` after a 3rd failure. **Skip every git step.**
-  - On PASS, record the result in the phase review.
-  - After the 3rd failure, stop, log to `failures.md`, extract a learned rule, and escalate to the human (no automatic revert).
-- The `pre-commit-gate` and `sprint-contract-gate` hooks only fire on `git commit`, so they are inert here. Run the equivalent checks explicitly (lint-imports, architecture tests, evaluator verdict) and include their output in the phase review.
+- `/auto` normally commits on PASS. **Skip that commit**; record the PASS in the phase review instead.
+- After a 3rd failure, `/auto` would run `git checkout -- .` or `git revert`. **Don't auto-revert.** Stop, log to `failures.md`, extract a learned rule, and escalate to the human.
+- `pre-commit-gate` and `sprint-contract-gate` run *after* `git commit` (PostToolUse), so they only report. Run the real checks (lint-imports, architecture tests, evaluator verdict) before committing, and include their output in the phase review.
+
+### Project substrate (added in Phase 02)
+
+The WealthWise-specific agents, skills, commands and hooks are listed in `AGENTS.md`. They are packaged by the root `plugin.json`.
 
 ## Where to find things
 
